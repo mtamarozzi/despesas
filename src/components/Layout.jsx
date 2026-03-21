@@ -2,10 +2,10 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import './Layout.css';
 
-const Layout = ({ children, activeTab, setActiveTab }) => {
+const Layout = ({ children, activeTab, setActiveTab, onExport, user }) => {
   return (
     <div className="layout">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onExport={onExport} user={user} />
       <main className="main-content">
         <header className="top-bar glass">
           <div className="search-bar">

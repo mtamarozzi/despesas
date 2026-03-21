@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import NewEntry from './pages/NewEntry';
 import Login from './pages/Login';
 import CalendarView from './pages/CalendarView';
+import Reports from './pages/Reports';
 import './App.css';
 
 function App() {
@@ -68,6 +69,23 @@ function App() {
       setExpenses([data[0], ...expenses]);
       setActiveTab('dashboard');
     }
+  };
+
+  const handleExportCSV = () => {
+    if (expenses.length === 0) return alert('Nenhuma despesa para exportar.');
+    const header = ['Nome', 'Categoria', 'Vencimento', 'Status', 'Valor'];
+    const rows = expenses.map(e => [
+      e.name, e.category, e.due_date, e.status,
+      Number(e.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+    ]);
+    const csv = [header, ...rows].map(r => r.map(c => `"${c ?? ''}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `despesas_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleDeleteExpense = async (id) => {
@@ -136,13 +154,15 @@ function App() {
         return <CalendarView expenses={expenses.map(e => ({...e, date: e.due_date}))} />;
       case 'new-entry':
         return <NewEntry onSave={handleAddExpense} onCancel={() => setActiveTab('dashboard')} />;
+      case 'reports':
+        return <Reports expenses={expenses} onExport={handleExportCSV} />;
       default:
         return <Dashboard expenses={expenses} />;
     }
   };
 
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+    <Layout activeTab={activeTab} setActiveTab={setActiveTab} onExport={handleExportCSV} user={session?.user}>
       {renderContent()}
     </Layout>
   );

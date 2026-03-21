@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+
+const CHIP_COLORS = ['#9D59FF', '#FF598B', '#5969FF', '#FF9459', '#59FFB5', '#c084fc'];
+
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import './CalendarView.css';
 
@@ -56,9 +59,16 @@ const CalendarView = ({ expenses = [] }) => {
               {item && (
                 <>
                   <span className="day-number">{item.day}</span>
-                  <div className="day-dots">
-                    {item.expenses.map(exp => (
-                      <div key={exp.id} className={`dot ${exp.status}`} title={`${exp.name}: R$ ${exp.amount}`}></div>
+                  <div className="day-chips">
+                    {item.expenses.map((exp, idx) => (
+                      <div
+                        key={exp.id}
+                        className="expense-chip"
+                        style={{ background: CHIP_COLORS[idx % CHIP_COLORS.length] }}
+                        title={`R$ ${Number(exp.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                      >
+                        {exp.name}
+                      </div>
                     ))}
                   </div>
                 </>

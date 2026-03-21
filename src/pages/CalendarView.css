@@ -109,20 +109,25 @@
   font-weight: 700;
 }
 
-.day-dots {
+.day-chips {
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
 }
 
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+.expense-chip {
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.4;
 }
-
-.dot.pago { background: var(--accent-green); }
-.dot.pendente { background: var(--accent-orange); }
 
 .upcoming-events {
   padding: 32px;

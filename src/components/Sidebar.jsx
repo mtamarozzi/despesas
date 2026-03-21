@@ -11,7 +11,9 @@ import {
 } from 'lucide-react';
 import './Sidebar.css';
 
-const Sidebar = ({ activeTab, setActiveTab }) => {
+const Sidebar = ({ activeTab, setActiveTab, onExport, user }) => {
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
+  const userInitials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'expenses', label: 'Expenses', icon: Receipt },
@@ -47,15 +49,15 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       </nav>
 
       <div className="sidebar-footer">
-        <button className="export-btn">
-          Export Report
+        <button className="export-btn" onClick={onExport}>
+          Exportar Relatório
         </button>
-        
+
         <div className="user-profile">
-          <img src="https://ui-avatars.com/api/?name=Alex+Rivera&background=9D59FF&color=fff" alt="User" />
+          <div className="user-avatar">{userInitials}</div>
           <div className="user-info">
-            <p>Alex Rivera</p>
-            <span>Premium Plan</span>
+            <p>{userName}</p>
+            <span>Conta Ativa</span>
           </div>
         </div>
       </div>

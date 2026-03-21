@@ -1,0 +1,126 @@
+.placeholder-view {
+  padding: 64px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 400px;
+  justify-content: center;
+}
+
+.placeholder-view h2 {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.placeholder-view p {
+  color: var(--text-secondary);
+}
+
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.view-header h1 {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.view-actions {
+  display: flex;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px;
+  border-radius: 100px;
+}
+
+.filter-tab {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 100px;
+  cursor: pointer;
+}
+
+.filter-tab.active {
+  background: var(--surface-alt);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.expenses-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.expense-row {
+  display: flex;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s ease;
+}
+
+.expense-row:last-child { border-bottom: none; }
+.expense-row:hover { background: rgba(255, 255, 255, 0.01); }
+
+.exp-info { flex: 1; display: flex; flex-direction: column; }
+.exp-info strong { font-size: 16px; margin-bottom: 4px; }
+.exp-info span { font-size: 12px; color: var(--text-secondary); }
+
+.exp-status { width: 150px; text-align: center; }
+
+.status-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 100px;
+}
+
+.status-tag.pago { background: rgba(48, 209, 88, 0.1); color: var(--accent-green); }
+.status-tag.pendente { background: rgba(255, 159, 10, 0.1); color: var(--accent-orange); }
+
+.exp-amount { width: 150px; text-align: right; }
+.exp-amount strong { font-size: 18px; color: var(--primary-color); }
+
+.delete-btn {
+  background: rgba(255, 69, 58, 0.1);
+  color: var(--accent-red);
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 16px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.expense-row:hover .delete-btn {
+  opacity: 1;
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.empty-msg {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+

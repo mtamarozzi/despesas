@@ -1,0 +1,150 @@
+.sidebar {
+  width: 280px;
+  height: calc(100vh - 40px);
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 16px;
+  position: sticky;
+  top: 20px;
+  z-index: 100;
+}
+
+.sidebar-header {
+  margin-bottom: 48px;
+  padding: 0 16px;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--primary-color);
+  border-radius: 8px;
+}
+
+.logo-container h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.logo-container span {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background: rgba(157, 89, 255, 0.15);
+  color: var(--primary-color);
+}
+
+.active-indicator {
+  position: absolute;
+  right: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 0 16px;
+}
+
+.export-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: scale 0.2s ease;
+}
+
+.export-btn:hover {
+  scale: 1.02;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.user-profile img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+}
+
+.user-info p {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.user-info span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 80px;
+    padding: 32px 12px;
+  }
+  
+  .sidebar-header, .user-info, .nav-item span, .logo-container div, .export-btn {
+    display: none;
+  }
+  
+  .nav-item {
+    justify-content: center;
+    padding: 16px;
+  }
+}

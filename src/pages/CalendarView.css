@@ -127,6 +127,17 @@
   text-overflow: ellipsis;
   max-width: 100%;
   line-height: 1.4;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.expense-chip:hover {
+  opacity: 0.8;
+}
+
+.expense-chip.chip-pago {
+  opacity: 0.35;
+  text-decoration: line-through;
 }
 
 .upcoming-events {

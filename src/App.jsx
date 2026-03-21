@@ -151,7 +151,7 @@ function App() {
           </div>
         );
       case 'calendar':
-        return <CalendarView expenses={expenses.map(e => ({...e, date: e.due_date}))} />;
+        return <CalendarView expenses={expenses.map(e => ({...e, date: e.due_date}))} onToggleStatus={handleToggleStatus} />;
       case 'new-entry':
         return <NewEntry onSave={handleAddExpense} onCancel={() => setActiveTab('dashboard')} />;
       case 'reports':

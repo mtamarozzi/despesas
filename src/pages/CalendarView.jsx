@@ -5,7 +5,7 @@ const CHIP_COLORS = ['#9D59FF', '#FF598B', '#5969FF', '#FF9459', '#59FFB5', '#c0
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import './CalendarView.css';
 
-const CalendarView = ({ expenses = [] }) => {
+const CalendarView = ({ expenses = [], onToggleStatus }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   
   const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
@@ -63,9 +63,10 @@ const CalendarView = ({ expenses = [] }) => {
                     {item.expenses.map((exp, idx) => (
                       <div
                         key={exp.id}
-                        className="expense-chip"
+                        className={`expense-chip ${exp.status === 'pago' ? 'chip-pago' : ''}`}
                         style={{ background: CHIP_COLORS[idx % CHIP_COLORS.length] }}
-                        title={`R$ ${Number(exp.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                        title={`${exp.status === 'pago' ? '✓ Pago' : 'Pendente'} — R$ ${Number(exp.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                        onClick={() => onToggleStatus && onToggleStatus(exp.id, exp.status)}
                       >
                         {exp.name}
                       </div>

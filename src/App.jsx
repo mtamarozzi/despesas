@@ -124,7 +124,7 @@ function App() {
                     <span className={`status-tag ${exp.status}`}>{exp.status.toUpperCase()}</span>
                   </div>
                   <div className="exp-amount">
-                    <strong>R$ {exp.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                    <strong>R$ {Number(exp.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                   </div>
                   <button className="delete-btn" onClick={() => handleDeleteExpense(exp.id)}>Excluir</button>
                 </div>

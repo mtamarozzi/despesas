@@ -47,7 +47,12 @@ const Dashboard = ({ expenses = [] }) => {
     }]
   };
 
-  const totalSpent = expenses.reduce((acc, exp) => acc + parseFloat(exp.amount.replace('.', '').replace(',', '.')), 0);
+  const totalSpent = expenses.reduce((acc, exp) => {
+    const val = typeof exp.amount === 'string' 
+      ? parseFloat(exp.amount.replace('.', '').replace(',', '.')) 
+      : exp.amount;
+    return acc + (val || 0);
+  }, 0);
   const formattedTotal = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSpent);
 
   const categories = [

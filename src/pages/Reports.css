@@ -101,4 +101,13 @@
 
 @media (max-width: 768px) {
   .report-summary-cards { grid-template-columns: repeat(2, 1fr); }
+  .report-section { padding: 20px 16px; }
+  .report-section-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .filter-tabs { flex-wrap: wrap; }
+}
+
+@media (max-width: 480px) {
+  .report-summary-cards { grid-template-columns: 1fr; }
+  .report-section { overflow-x: auto; }
+  .report-table { min-width: 460px; }
 }

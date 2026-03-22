@@ -187,4 +187,18 @@
   .day-cell { padding: 8px; }
   .day-number { font-size: 13px; }
   .month-selector h2 { font-size: 18px; min-width: 140px; }
+  .calendar-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .calendar-grid { padding: 16px; }
+  .upcoming-events { padding: 20px; }
+}
+
+@media (max-width: 480px) {
+  .days-container { gap: 4px; }
+  .day-cell { padding: 6px; border-radius: 10px; }
+  .day-number { font-size: 12px; }
+  .expense-chip { font-size: 9px; }
+  .weekday-header { font-size: 11px; }
+  .month-selector { gap: 12px; }
+  .month-selector h2 { font-size: 16px; min-width: 110px; }
+  .add-event-btn span { display: none; }
 }

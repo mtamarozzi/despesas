@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import './Sidebar.css';
 
-const Sidebar = ({ activeTab, setActiveTab, onExport, user }) => {
+const Sidebar = ({ activeTab, setActiveTab, onExport, user, isOpen }) => {
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
   const userInitials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const menuItems = [
@@ -23,7 +23,7 @@ const Sidebar = ({ activeTab, setActiveTab, onExport, user }) => {
   ];
 
   return (
-    <aside className="sidebar glass">
+    <aside className={`sidebar glass${isOpen ? ' open' : ''}`}>
       <div className="sidebar-header">
         <div className="logo-container">
           <div className="logo-icon glow"></div>

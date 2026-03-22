@@ -295,8 +295,20 @@
   .cards-row { grid-template-columns: repeat(2, 1fr); }
 }
 
+@media (max-width: 768px) {
+  .chart-card { padding: 20px; }
+  .recent-activity { padding: 20px; }
+  .legend-item { min-width: 0; }
+  .economy-value h2 { font-size: 36px; }
+}
+
 @media (max-width: 640px) {
   .cards-row { grid-template-columns: 1fr; }
-  .chart-main { flex-direction: column; gap: 32px; }
+  .chart-main { flex-direction: column; gap: 24px; align-items: center; }
   .legend-item { min-width: 100%; }
+  .chart-viz { width: 180px; height: 180px; }
+  .t-id { display: none; }
+  .transaction-item { gap: 12px; }
+  .dashboard-container { gap: 20px; }
+  .summary-card { padding: 20px; }
 }

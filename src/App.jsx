@@ -1,57 +1,112 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './utils/supabaseClient';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import NewEntry from './pages/NewEntry';
 import Login from './pages/Login';
+import HouseholdSetup from './pages/HouseholdSetup';
 import CalendarView from './pages/CalendarView';
 import Reports from './pages/Reports';
 import './App.css';
 
 function App() {
   const [session, setSession] = useState(null);
-  const [activeTab, setActiveTab ] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [household, setHousehold] = useState(null);
+  const [householdLoading, setHouseholdLoading] = useState(true);
+  const realtimeChannel = useRef(null);
 
-  // Auth state listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchExpenses();
+      if (session) fetchHousehold(session.user);
+      else setHouseholdLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchExpenses();
-      else setExpenses([]);
+      if (session) fetchHousehold(session.user);
+      else { setExpenses([]); setHousehold(null); setHouseholdLoading(false); }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      realtimeChannel.current?.unsubscribe();
+    };
   }, []);
 
-  const fetchExpenses = async () => {
+  const fetchHousehold = async (user) => {
+    setHouseholdLoading(true);
+    const { data } = await supabase
+      .from('household_members')
+      .select('household_id, households(id, name, invite_code)')
+      .eq('user_id', user.id)
+      .single();
+
+    if (data?.households) {
+      setHousehold(data.households);
+      await fetchExpenses(data.households.id);
+      subscribeRealtime(data.households.id);
+    }
+    setHouseholdLoading(false);
+  };
+
+  const subscribeRealtime = (householdId) => {
+    realtimeChannel.current?.unsubscribe();
+    realtimeChannel.current = supabase
+      .channel(`expenses-${householdId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'expenses',
+        filter: `household_id=eq.${householdId}`,
+      }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setExpenses(prev => {
+            if (prev.find(e => e.id === payload.new.id)) return prev;
+            return [payload.new, ...prev];
+          });
+        } else if (payload.eventType === 'DELETE') {
+          setExpenses(prev => prev.filter(e => e.id !== payload.old.id));
+        } else if (payload.eventType === 'UPDATE') {
+          setExpenses(prev => prev.map(e => e.id === payload.new.id ? payload.new : e));
+        }
+      })
+      .subscribe();
+  };
+
+  const fetchExpenses = async (householdId) => {
     setLoading(true);
     const { data, error } = await supabase
       .from('expenses')
       .select('*')
+      .eq('household_id', householdId)
       .order('due_date', { ascending: false });
-    
+
     if (error) console.error('Erro ao buscar despesas:', error);
     else setExpenses(data || []);
     setLoading(false);
   };
 
+  const handleHouseholdReady = (newHousehold) => {
+    setHousehold(newHousehold);
+    fetchExpenses(newHousehold.id);
+    subscribeRealtime(newHousehold.id);
+  };
+
   const handleAddExpense = async (newExpense) => {
     const { data: { user } } = await supabase.auth.getUser();
-    
-    // Converte valor para número para o banco
     const numericAmount = parseFloat(newExpense.amount.replace('.', '').replace(',', '.'));
+    const addedByName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário';
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('expenses')
       .insert([{
         user_id: user.id,
+        household_id: household.id,
+        added_by_name: addedByName,
         name: newExpense.name,
         amount: numericAmount,
         category: newExpense.category,
@@ -59,14 +114,12 @@ function App() {
         notes: newExpense.notes,
         recurring: newExpense.recurring,
         status: 'pendente'
-      }])
-      .select();
+      }]);
 
     if (error) {
-      alert('Erro ao salvar no Supabase. Verifique se as tabelas foram criadas!');
+      alert('Erro ao salvar. Verifique se a migration foi executada no Supabase!');
       console.error(error);
     } else {
-      setExpenses([data[0], ...expenses]);
       setActiveTab('dashboard');
     }
   };
@@ -112,7 +165,15 @@ function App() {
   };
 
   if (!session) {
-    return <Login onLoginSuccess={() => fetchExpenses()} />;
+    return <Login onLoginSuccess={() => {}} />;
+  }
+
+  if (householdLoading) {
+    return <div className="loading-state">Carregando...</div>;
+  }
+
+  if (!household) {
+    return <HouseholdSetup user={session.user} onHouseholdReady={handleHouseholdReady} />;
   }
 
   const renderContent = () => {
@@ -136,7 +197,7 @@ function App() {
                 <div key={exp.id} className="expense-row">
                   <div className="exp-info">
                     <strong>{exp.name}</strong>
-                    <span>{exp.category} • {exp.due_date}</span>
+                    <span>{exp.category} • {exp.due_date}{exp.added_by_name ? ` • ${exp.added_by_name}` : ''}</span>
                   </div>
                   <div className="exp-status" onClick={() => handleToggleStatus(exp.id, exp.status)}>
                     <span className={`status-tag ${exp.status}`}>{exp.status.toUpperCase()}</span>

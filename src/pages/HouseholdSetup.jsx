@@ -27,13 +27,23 @@ const HouseholdSetup = ({ user, onHouseholdReady }) => {
       .select()
       .single();
 
-    if (hErr) { setError('Erro ao criar família. Tente novamente.'); setLoading(false); return; }
+    if (hErr) {
+      console.error('Erro ao criar households:', hErr);
+      setError(`Erro: ${hErr.message}`);
+      setLoading(false);
+      return;
+    }
 
     const { error: mErr } = await supabase
       .from('household_members')
       .insert([{ household_id: household.id, user_id: user.id }]);
 
-    if (mErr) { setError('Erro ao criar família. Tente novamente.'); setLoading(false); return; }
+    if (mErr) {
+      console.error('Erro ao criar household_members:', mErr);
+      setError(`Erro: ${mErr.message}`);
+      setLoading(false);
+      return;
+    }
 
     setCreatedCode(code);
     setCreatedHousehold(household);

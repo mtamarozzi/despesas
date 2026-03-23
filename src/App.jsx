@@ -117,8 +117,8 @@ function App() {
       }]);
 
     if (error) {
-      alert('Erro ao salvar. Verifique se a migration foi executada no Supabase!');
-      console.error(error);
+      console.error('Erro ao salvar despesa:', error);
+      alert(`Erro ao salvar: ${error.message}`);
     } else {
       setActiveTab('dashboard');
     }

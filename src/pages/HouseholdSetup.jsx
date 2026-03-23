@@ -45,6 +45,9 @@ const HouseholdSetup = ({ user, onHouseholdReady }) => {
       return;
     }
 
+    // Salva household_id nos metadados do usuário (persiste no JWT)
+    await supabase.auth.updateUser({ data: { household_id: household.id } });
+
     setCreatedCode(code);
     setCreatedHousehold(household);
     setLoading(false);
@@ -76,6 +79,9 @@ const HouseholdSetup = ({ user, onHouseholdReady }) => {
       setLoading(false);
       return;
     }
+
+    // Salva household_id nos metadados do usuário (persiste no JWT)
+    await supabase.auth.updateUser({ data: { household_id: household.id } });
 
     setLoading(false);
     onHouseholdReady(household);

@@ -45,21 +45,35 @@ function App() {
 
   const fetchHousehold = async (user) => {
     setHouseholdLoading(true);
-    const { data, error } = await supabase
-      .from('household_members')
-      .select('household_id, households(id, name, invite_code)')
-      .eq('user_id', user.id)
+
+    // Lê household_id direto dos metadados do usuário (está no JWT, sem query extra)
+    const householdId = user.user_metadata?.household_id;
+
+    if (!householdId) {
+      // Usuário ainda não tem família — mostra tela de configuração
+      setHouseholdLoading(false);
+      return;
+    }
+
+    // Busca detalhes da família (nome e código de convite)
+    const { data: houseData, error } = await supabase
+      .from('households')
+      .select('id, name, invite_code')
+      .eq('id', householdId)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Erro ao buscar família:', error.message);
+      setHouseholdLoading(false);
+      return;
     }
 
-    if (data?.households) {
-      setHousehold(data.households);
-      await fetchExpenses(data.households.id);
-      subscribeRealtime(data.households.id);
+    if (houseData) {
+      setHousehold(houseData);
+      await fetchExpenses(householdId);
+      subscribeRealtime(householdId);
     }
+
     setHouseholdLoading(false);
   };
 

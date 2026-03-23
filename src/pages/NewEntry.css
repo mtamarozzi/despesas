@@ -95,6 +95,11 @@
   cursor: pointer;
 }
 
+.select-wrapper select option {
+  background: #1A1A24;
+  color: #ffffff;
+}
+
 .select-icon {
   position: absolute;
   right: 16px;

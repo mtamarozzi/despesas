@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 const CHIP_COLORS = ['#9D59FF', '#FF598B', '#5969FF', '#FF9459', '#59FFB5', '#c084fc'];
 
@@ -17,17 +17,39 @@ const CalendarView = ({ expenses = [], onToggleStatus }) => {
   const prevMonth = () => setCurrentDate(new Date(year, month - 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1));
 
+  // Expande despesas recorrentes para o mês atual
+  const monthExpenses = useMemo(() => {
+    const result = [];
+    expenses.forEach(exp => {
+      if (!exp.date) return;
+      const [eYear, eMonth, eDay] = exp.date.split('-').map(Number);
+      if (eYear === year && eMonth - 1 === month) {
+        result.push(exp);
+      } else if (exp.recurring) {
+        const origDate = new Date(eYear, eMonth - 1, 1);
+        const currDate = new Date(year, month, 1);
+        if (origDate <= currDate) {
+          const maxDay = new Date(year, month + 1, 0).getDate();
+          const day = Math.min(eDay, maxDay);
+          const virtualDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          result.push({ ...exp, date: virtualDate });
+        }
+      }
+    });
+    return result;
+  }, [expenses, year, month]);
+
   const days = [];
   const totalDays = daysInMonth(year, month);
   const startDay = firstDayOfMonth(year, month);
 
   // Padding for previous month
   for (let i = 0; i < startDay; i++) days.push(null);
-  
+
   // Current month days
   for (let d = 1; d <= totalDays; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const dayExpenses = expenses.filter(exp => exp.date === dateStr);
+    const dayExpenses = monthExpenses.filter(exp => exp.date === dateStr);
     days.push({ day: d, date: dateStr, expenses: dayExpenses });
   }
 
@@ -82,7 +104,7 @@ const CalendarView = ({ expenses = [], onToggleStatus }) => {
       <section className="upcoming-events glass">
         <h3>Próximos Vencimentos</h3>
         <div className="events-list">
-          {expenses.filter(e => new Date(e.date) >= new Date()).slice(0, 5).map(e => (
+          {monthExpenses.filter(e => new Date(e.date + 'T00:00:00') >= new Date()).slice(0, 5).map(e => (
             <div key={e.id} className="event-item">
               <div className="event-date">
                 <span>{new Date(e.date).getDate()}</span>

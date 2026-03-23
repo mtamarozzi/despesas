@@ -13,22 +13,28 @@ function App() {
   const [session, setSession] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [expenses, setExpenses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [household, setHousehold] = useState(null);
   const [householdLoading, setHouseholdLoading] = useState(true);
   const realtimeChannel = useRef(null);
+  const hasFetchedHousehold = useRef(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchHousehold(session.user);
-      else setHouseholdLoading(false);
-    });
-
+    // Usa apenas onAuthStateChange — ele dispara INITIAL_SESSION no carregamento da página
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchHousehold(session.user);
-      else { setExpenses([]); setHousehold(null); setHouseholdLoading(false); }
+      if (session) {
+        if (!hasFetchedHousehold.current) {
+          hasFetchedHousehold.current = true;
+          fetchHousehold(session.user);
+        }
+      } else {
+        hasFetchedHousehold.current = false;
+        setExpenses([]);
+        setHousehold(null);
+        setHouseholdLoading(false);
+        setLoading(false);
+      }
     });
 
     return () => {
@@ -39,11 +45,15 @@ function App() {
 
   const fetchHousehold = async (user) => {
     setHouseholdLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('household_members')
       .select('household_id, households(id, name, invite_code)')
       .eq('user_id', user.id)
       .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Erro ao buscar família:', error.message);
+    }
 
     if (data?.households) {
       setHousehold(data.households);
@@ -91,6 +101,7 @@ function App() {
   };
 
   const handleHouseholdReady = (newHousehold) => {
+    hasFetchedHousehold.current = true;
     setHousehold(newHousehold);
     fetchExpenses(newHousehold.id);
     subscribeRealtime(newHousehold.id);

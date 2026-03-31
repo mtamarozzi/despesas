@@ -36,12 +36,12 @@
 
 .login-card {
   width: 420px;
-  padding: 48px;
+  padding: 36px 48px;
   position: relative;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
 }
 
 .login-header {
@@ -49,7 +49,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
+}
+
+.login-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-img-large {
+  width: 160px;
+  height: auto;
+  object-fit: contain;
 }
 
 .login-header h1 {

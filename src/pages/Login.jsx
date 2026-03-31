@@ -44,7 +44,6 @@ const Login = ({ onLoginSuccess }) => {
         <header className="login-header">
           <div className="login-logo">
             <img src={logoImg} alt="CasaFlow Logo" className="logo-img-large" />
-            <h1>CasaFlow</h1>
             <p>Gestão Financeira Residencial</p>
           </div>
         </header>

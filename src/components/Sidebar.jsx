@@ -28,10 +28,6 @@ const Sidebar = ({ activeTab, setActiveTab, onExport, user, isOpen }) => {
       <div className="sidebar-header">
         <div className="logo-container">
           <img src={logoImg} alt="CasaFlow Logo" className="logo-img" />
-          <div className="logo-text">
-            <h1>CasaFlow</h1>
-            <span>Gestão Residencial</span>
-          </div>
         </div>
       </div>
 

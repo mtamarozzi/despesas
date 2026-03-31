@@ -10,10 +10,10 @@
   --accent-green: #30D158;
   --accent-red: #FF453A;
   --accent-orange: #FF9F0A;
-  --radius-xl: 32px;
-  --radius-lg: 24px;
-  --radius-md: 16px;
-  --radius-sm: 8px;
+  --radius-xl: 20px;
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 4px;
   --blur: 20px;
   --border-color: rgba(255, 255, 255, 0.08);
   --shadow-main: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
@@ -25,6 +25,10 @@
   padding: 0;
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
+}
+
+html {
+  font-size: 15px;
 }
 
 body {

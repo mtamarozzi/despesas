@@ -43,7 +43,7 @@ const Login = ({ onLoginSuccess }) => {
         <header className="login-header">
           <div className="logo-icon glow"></div>
           <h1>{isLogin ? 'Bem-vindo de volta' : 'Crie sua conta'}</h1>
-          <p>Ethereal Ledger • Residential Control</p>
+          <p>Ethereal Ledger • Controle Residencial</p>
         </header>
 
         {error && <div className="auth-error">{error}</div>}

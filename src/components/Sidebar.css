@@ -1,18 +1,18 @@
 .sidebar {
-  width: 280px;
+  width: 240px;
   height: calc(100vh - 40px);
   margin: 20px;
   display: flex;
   flex-direction: column;
-  padding: 32px 16px;
+  padding: 24px 12px;
   position: sticky;
   top: 20px;
   z-index: 100;
 }
 
 .sidebar-header {
-  margin-bottom: 48px;
-  padding: 0 16px;
+  margin-bottom: 32px;
+  padding: 0 12px;
 }
 
 .logo-container {
@@ -29,7 +29,7 @@
 }
 
 .logo-container h1 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.5px;
 }
@@ -52,12 +52,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 10px 14px;
   border-radius: var(--radius-md);
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);

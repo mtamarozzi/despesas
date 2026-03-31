@@ -16,10 +16,10 @@ const Sidebar = ({ activeTab, setActiveTab, onExport, user, isOpen }) => {
   const userInitials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'expenses', label: 'Expenses', icon: Receipt },
-    { id: 'calendar', label: 'Calendar', icon: Bell },
-    { id: 'new-entry', label: 'New Entry', icon: PlusCircle },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
+    { id: 'expenses', label: 'Despesas', icon: Receipt },
+    { id: 'calendar', label: 'Calendário', icon: Bell },
+    { id: 'new-entry', label: 'Nova Despesa', icon: PlusCircle },
+    { id: 'reports', label: 'Relatórios', icon: BarChart3 },
   ];
 
   return (
@@ -29,7 +29,7 @@ const Sidebar = ({ activeTab, setActiveTab, onExport, user, isOpen }) => {
           <div className="logo-icon glow"></div>
           <div>
             <h1>Ethereal Ledger</h1>
-            <span>RESIDENTIAL CONTROL</span>
+            <span>CONTROLE RESIDENCIAL</span>
           </div>
         </div>
       </div>

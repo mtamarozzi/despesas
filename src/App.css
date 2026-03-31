@@ -9,7 +9,7 @@
 }
 
 .placeholder-view h2 {
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--primary-color);
 }
@@ -22,11 +22,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 .view-header h1 {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 800;
 }
 
@@ -63,7 +63,7 @@
 .expense-row {
   display: flex;
   align-items: center;
-  padding: 24px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--border-color);
   transition: background 0.2s ease;
 }
@@ -72,8 +72,8 @@
 .expense-row:hover { background: rgba(255, 255, 255, 0.01); }
 
 .exp-info { flex: 1; display: flex; flex-direction: column; }
-.exp-info strong { font-size: 16px; margin-bottom: 4px; }
-.exp-info span { font-size: 12px; color: var(--text-secondary); }
+.exp-info strong { font-size: 14px; margin-bottom: 2px; }
+.exp-info span { font-size: 11px; color: var(--text-secondary); }
 
 .exp-status { width: 150px; text-align: center; }
 
@@ -87,8 +87,8 @@
 .status-tag.pago { background: rgba(48, 209, 88, 0.1); color: var(--accent-green); }
 .status-tag.pendente { background: rgba(255, 159, 10, 0.1); color: var(--accent-orange); }
 
-.exp-amount { width: 150px; text-align: right; }
-.exp-amount strong { font-size: 18px; color: var(--primary-color); }
+.exp-amount { width: 140px; text-align: right; }
+.exp-amount strong { font-size: 16px; color: var(--primary-color); }
 
 .delete-btn {
   background: rgba(255, 69, 58, 0.1);

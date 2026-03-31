@@ -6,13 +6,13 @@
 
 .new-entry-header {
   text-align: center;
-  margin-bottom: 48px;
+  margin-bottom: 24px;
 }
 
 .new-entry-header h1 {
-  font-size: 32px;
+  font-size: 22px;
   font-weight: 800;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .new-entry-header p {
@@ -21,7 +21,7 @@
 }
 
 .form-card {
-  padding: 40px;
+  padding: 20px;
 }
 
 .form-grid {
@@ -53,10 +53,10 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 14px 16px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   transition: border-color 0.2s ease;
 }
 
@@ -116,9 +116,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 14px;
   border-radius: var(--radius-md);
-  margin-bottom: 40px;
+  margin-bottom: 24px;
   background: rgba(157, 89, 255, 0.05);
 }
 
@@ -146,10 +146,10 @@
   background: var(--primary-color);
   color: white;
   border: none;
-  padding: 16px;
+  padding: 12px;
   border-radius: var(--radius-md);
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
   cursor: pointer;
   transition: transform 0.2s ease;
 }

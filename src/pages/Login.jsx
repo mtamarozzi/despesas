@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { Mail, Lock, LogIn, UserPlus, ArrowRight } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 import './Login.css';
 
 const Login = ({ onLoginSuccess }) => {
@@ -41,9 +42,11 @@ const Login = ({ onLoginSuccess }) => {
       
       <div className="login-card glass">
         <header className="login-header">
-          <div className="logo-icon glow"></div>
-          <h1>{isLogin ? 'Bem-vindo de volta' : 'Crie sua conta'}</h1>
-          <p>Ethereal Ledger • Controle Residencial</p>
+          <div className="login-logo">
+            <img src={logoImg} alt="CasaFlow Logo" className="logo-img-large" />
+            <h1>CasaFlow</h1>
+            <p>Gestão Financeira Residencial</p>
+          </div>
         </header>
 
         {error && <div className="auth-error">{error}</div>}

@@ -4,7 +4,6 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import NewEntry from './pages/NewEntry';
 import Login from './pages/Login';
-import HouseholdSetup from './pages/HouseholdSetup';
 import CalendarView from './pages/CalendarView';
 import Reports from './pages/Reports';
 import './App.css';
@@ -46,13 +45,39 @@ function App() {
   const fetchHousehold = async (user) => {
     setHouseholdLoading(true);
 
-    // Lê household_id direto dos metadados do usuário (está no JWT, sem query extra)
-    const householdId = user.user_metadata?.household_id;
+    let householdId = user.user_metadata?.household_id;
 
     if (!householdId) {
-      // Usuário ainda não tem família — mostra tela de configuração
-      setHouseholdLoading(false);
-      return;
+      // Tenta encontrar a household padrão "CasaFlow" ou cria uma nova
+      const { data: existingHouse, error: searchError } = await supabase
+        .from('households')
+        .select('id, name, invite_code')
+        .eq('name', 'CasaFlow')
+        .maybeSingle();
+
+      if (existingHouse) {
+        householdId = existingHouse.id;
+      } else {
+        const { data: newHouse, error: createError } = await supabase
+          .from('households')
+          .insert([{ name: 'CasaFlow', invite_code: 'CASAF' + Math.random().toString(36).substring(7).toUpperCase() }])
+          .select()
+          .single();
+        
+        if (newHouse) householdId = newHouse.id;
+        else {
+          console.error('Erro ao criar família padrão:', createError);
+          setHouseholdLoading(false);
+          return;
+        }
+      }
+
+      if (householdId) {
+        // Vincula o usuário à household permanentemente nos metadados
+        await supabase.auth.updateUser({
+          data: { household_id: householdId }
+        });
+      }
     }
 
     // Busca detalhes da família (nome e código de convite)
@@ -198,7 +223,7 @@ function App() {
   }
 
   if (!household) {
-    return <HouseholdSetup user={session.user} onHouseholdReady={handleHouseholdReady} />;
+    return <div className="loading-state">Configurando CasaFlow...</div>;
   }
 
   const renderContent = () => {

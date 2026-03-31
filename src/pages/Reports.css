@@ -13,9 +13,9 @@
 .rcard {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
-  border-radius: var(--radius-lg, 20px);
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg, 12px);
 }
 
 .rcard div {
@@ -32,19 +32,19 @@
 }
 
 .rcard h3 {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 800;
 }
 
 .report-section {
-  padding: 28px 32px;
-  border-radius: var(--radius-lg, 20px);
+  padding: 16px 20px;
+  border-radius: var(--radius-lg, 12px);
 }
 
 .report-section h3 {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .report-section-header {
@@ -80,7 +80,7 @@
 }
 
 .report-table td {
-  padding: 14px;
+  padding: 10px 14px;
   border-bottom: 1px solid rgba(255,255,255,0.04);
 }
 

@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronRight
 } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 import './Sidebar.css';
 
 const Sidebar = ({ activeTab, setActiveTab, onExport, user, isOpen }) => {
@@ -26,10 +27,10 @@ const Sidebar = ({ activeTab, setActiveTab, onExport, user, isOpen }) => {
     <aside className={`sidebar glass${isOpen ? ' open' : ''}`}>
       <div className="sidebar-header">
         <div className="logo-container">
-          <div className="logo-icon glow"></div>
-          <div>
-            <h1>Ethereal Ledger</h1>
-            <span>CONTROLE RESIDENCIAL</span>
+          <img src={logoImg} alt="CasaFlow Logo" className="logo-img" />
+          <div className="logo-text">
+            <h1>CasaFlow</h1>
+            <span>Gestão Residencial</span>
           </div>
         </div>
       </div>

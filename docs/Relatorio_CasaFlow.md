@@ -38,6 +38,7 @@ O desenvolvimento seguiu uma trajetória de evolução rápida, focando inicialm
     *   **F1-hotfix SPA (2026-04-15):** após deploy na Vercel (casa.hubautomacao.pro), o frontend travou no loading "Configurando CasaFlow...". Causa: o `user_metadata.household_id` dos usuários apontava para households antigos deletados na limpeza da F0. Fix: renomeado household atual de "Casa" para "CasaFlow" (bate com o search do `App.jsx:57`) e atualizado `auth.users.raw_user_meta_data.household_id` de Marcelo e Rossana para o UUID correto `f5a5bd3f-9fbf-4d78-9b18-8d51b998b35e`. Usuários precisaram fazer logout/login para o JWT pegar o metadata novo. App voltou ao normal, mostrando as 2 despesas de teste.
 *   **Fase 6: Fase 2 do Assistente WhatsApp (Em andamento — Abril 2026)**
     *   **F2.0 concluída (2026-04-15):** `App.jsx` refatorado com self-healing do `fetchHousehold` — extraído helper `findOrCreateDefaultHousehold` e alterada a ordem de tentativa: agora primeiro tenta `maybeSingle` pelo id do metadata (não mais `.single()` que bloqueava por erro); se vier vazio, cai automaticamente no fluxo de buscar/criar "CasaFlow" e atualizar o metadata do usuário. Evita que nova limpeza/rotação do banco no futuro trave o SPA de novo.
+    *   **F2.6 concluída (2026-04-15):** migration `create_whatsapp_audit_log` aplicada. Tabela registra cada interação (message_id, phone_number, direction inbound/outbound, intent, action, success, latency_ms, error_code, raw_text) com índices por phone+ts e ts. É a fundação para F2.3 (rate limit por janela de 1h) e F2.5 (análise de frases que o Gemini mais erra).
     *   Documentos vivos do assistente: `docs/PLANO_CONTINUIDADE.md` (roadmap até Fase 7) e `docs/RELATORIO_CASAFLOW_WHATSAPP.md` (estado técnico detalhado).
 
 ---
@@ -71,4 +72,4 @@ O CasaFlow não é apenas um rastreador de despesas, é uma plataforma de gestã
 3.  **Colaboração em Tempo Real:** Alterações feitas por um membro da família aparecem instantaneamente para os outros membros.
 
 ---
-*Última atualização: 15 de Abril de 2026 — **Fase 2 iniciada; F2.0 (self-heal do SPA) concluída**.*
+*Última atualização: 15 de Abril de 2026 — F2.6 (tabela whatsapp_audit_log) concluída.*

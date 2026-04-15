@@ -3,7 +3,18 @@ import { getServiceClient } from "./supabase-client.ts";
 import { sendText } from "./evolution.ts";
 import { interpret } from "./gemini.ts";
 import { registerExpense } from "./handlers/expense.ts";
+import {
+  clearPendingContext,
+  getPendingContext,
+  savePendingContext,
+} from "./handlers/context.ts";
 import { extractText, log, stripWhatsappJid, todayISO } from "./utils.ts";
+
+const MSG_UNAUTHORIZED = "Número não autorizado no CasaFlow.";
+const MSG_NON_TEXT = "Só entendo mensagens de texto por enquanto. Em breve: áudio e foto.";
+const MSG_UNKNOWN =
+  "Ainda não entendi essa mensagem. Tenta algo como: \"paguei 120 de luz hoje\".";
+const MSG_SYSTEM_ERROR = "⚠️ Tive um problema agora. Pode tentar de novo em alguns segundos?";
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
@@ -58,28 +69,42 @@ Deno.serve(async (req: Request) => {
 
   if (!user) {
     log("unauthorized_number", { phone });
-    await sendText(phone, "Número não autorizado no CasaFlow.");
+    await sendText(phone, MSG_UNAUTHORIZED);
     return new Response("ok", { status: 200 });
   }
 
   const text = extractText(data.message).trim();
   if (!text) {
-    await sendText(phone, "Só entendo mensagens de texto por enquanto. Em breve: áudio e foto.");
+    await sendText(phone, MSG_NON_TEXT);
     return new Response("ok", { status: 200 });
   }
 
   try {
-    const result = await interpret(text, todayISO());
+    const pending = await getPendingContext(phone);
+    const combinedText = pending ? `${pending}\n${text}` : text;
+    log("interpreting", { phone, has_pending: !!pending, length: combinedText.length });
+
+    const result = await interpret(combinedText, todayISO());
+
     if (result.intent === "expense" && result.payload) {
       const confirmation = await registerExpense(user, result.payload);
+      await clearPendingContext(phone);
       await sendText(phone, confirmation);
-    } else {
-      await sendText(phone, "Ainda não entendi essa mensagem. Tenta algo como: \"paguei 120 de luz hoje\".");
+      return new Response("ok", { status: 200 });
     }
+
+    if (result.intent === "expense" && result.erro) {
+      await savePendingContext(phone, combinedText, result.erro);
+      await sendText(phone, result.erro);
+      return new Response("ok", { status: 200 });
+    }
+
+    await clearPendingContext(phone);
+    await sendText(phone, MSG_UNKNOWN);
+    return new Response("ok", { status: 200 });
   } catch (err) {
     log("handler_error", { error: (err as Error).message, phone });
-    await sendText(phone, "⚠️ Tive um problema agora. Pode tentar de novo em alguns segundos?");
+    await sendText(phone, MSG_SYSTEM_ERROR);
+    return new Response("ok", { status: 200 });
   }
-
-  return new Response("ok", { status: 200 });
 });

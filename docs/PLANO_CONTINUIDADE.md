@@ -110,6 +110,55 @@ ethereal-ledger/
 
 ---
 
+### Período de Observação (entre Fase 2 e Fase 3)
+
+**Decisão (2026-04-15):** antes de começar a Fase 3, rodar o bot em produção real por 1–2 dias com uso orgânico de Marcelo e Rossana. Objetivo: coletar dados empíricos pra calibrar as próximas fases.
+
+**Queries de análise a rodar ao retomar** (via MCP `execute_sql` ou painel Supabase):
+
+```sql
+-- 1. Distribuição de intents e actions
+SELECT intent, action, COUNT(*) AS total
+FROM whatsapp_audit_log
+WHERE ts > now() - interval '3 days'
+GROUP BY intent, action
+ORDER BY total DESC;
+
+-- 2. Frases classificadas como unknown (candidatas a melhorar prompt)
+SELECT raw_text, COUNT(*) AS tentativas
+FROM whatsapp_audit_log
+WHERE action = 'unknown_intent' AND ts > now() - interval '3 days'
+GROUP BY raw_text
+ORDER BY tentativas DESC;
+
+-- 3. Latência média por action
+SELECT action, AVG(latency_ms)::int AS p50, MAX(latency_ms) AS p_max, COUNT(*) AS n
+FROM whatsapp_audit_log
+WHERE ts > now() - interval '3 days' AND latency_ms IS NOT NULL
+GROUP BY action
+ORDER BY p50 DESC;
+
+-- 4. Distribuição de categorias nas despesas registradas via WhatsApp
+SELECT category, COUNT(*) AS qtd, SUM(amount)::numeric(10,2) AS total
+FROM expenses
+WHERE added_by_name LIKE '% (WhatsApp)' AND created_at > now() - interval '3 days'
+GROUP BY category
+ORDER BY total DESC;
+
+-- 5. Despesas desfeitas (contexto para entender confusões)
+SELECT ts, raw_text
+FROM whatsapp_audit_log
+WHERE action = 'expense_undone' AND ts > now() - interval '3 days'
+ORDER BY ts DESC;
+```
+
+**Possíveis saídas do período:**
+- Continuar Fase 3 como planejado (consultas)
+- Tunar prompt/schema do Gemini antes da Fase 3 (se `unknown_intent` > 15%)
+- Reordenar backlog (ex: se lembretes forem mais valiosos que OCR, F6 vem antes de F4)
+
+---
+
 ### Fase 3 — Consultas (intent `query`)
 
 **Objetivo:** inspiração tela 1 — "Quanto foi gasto na categoria saúde?"

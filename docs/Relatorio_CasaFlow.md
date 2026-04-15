@@ -43,7 +43,16 @@ O desenvolvimento seguiu uma trajetória de evolução rápida, focando inicialm
     *   **Decisão (2026-04-15):** subcategorias hierárquicas (Alimentação → mercado/delivery/padaria) saem do escopo das fases 2–7 e viram **Fase 8** no `PLANO_CONTINUIDADE.md`. Motivo: mantém foco no MVP e permite decisão de schema (tabela vs lista controlada) baseada em uso real das categorias-mãe antes de adicionar complexidade.
     *   **F2.2 concluída (2026-04-15) — comando /desfazer validado em produção:** schema Gemini ganhou intent `undo` (enum agora é `expense | unknown | undo`); prompt atualizado com exemplos ("desfazer", "apaga último", "errei, apaga", "anula"). Novo `handlers/undo.ts` busca a última despesa do usuário com `added_by_name LIKE '% (WhatsApp)'` criada nos últimos 10min, deleta, e responde com mensagem humanizada. Se não achar, retorna resposta de "nada pra desfazer". Teste end-to-end: (1) "paguei 50 no almoço" → inserção + confirmação; (2) "desfazer" → remoção + confirmação; (3) "desfazer" de novo → "nada pra desfazer". Auditoria com `action='expense_undone'` e `action='undo_nothing'` gravada em `whatsapp_audit_log`.
     *   **F2.3 concluída (2026-04-15) — rate limit validado em produção:** novo módulo `rate-limit.ts` conta inbounds do `whatsapp_audit_log` em janela deslizante de 60min; se >= 30, bloqueia **antes** de chamar o Gemini (economiza custo). Colocado após resolução de usuário e antes do processamento de texto. Teste forçado via seed de 28 linhas fake em `whatsapp_audit_log`: total chegou a 31/30 → mensagem subsequente recebeu resposta humanizada "Calma, estamos indo rápido demais 😅" e `action='rate_limited'` gravado. Seed limpo após validação.
-    *   **F2.4 concluída (2026-04-15) — pg_cron habilitado + 3 jobs de cleanup:** migration `enable_pg_cron_cleanup_jobs` aplicada. Jobs criados e ativos: (a) `whatsapp_context_cleanup` a cada 5min — remove contextos com `expires_at < now()`; (b) `whatsapp_messages_seen_cleanup` às 03:00 UTC diário — remove registros > 7 dias; (c) `whatsapp_audit_log_cleanup` aos domingos 04:00 UTC — retém 90 dias de auditoria. Migration é idempotente (faz unschedule dos jobs de mesmo nome antes de recriar) — pode rodar de novo sem erro. **Fase 2 completa.**
+    *   **F2.4 concluída (2026-04-15) — pg_cron habilitado + 3 jobs de cleanup:** migration `enable_pg_cron_cleanup_jobs` aplicada. Jobs criados e ativos: (a) `whatsapp_context_cleanup` a cada 5min — remove contextos com `expires_at < now()`; (b) `whatsapp_messages_seen_cleanup` às 03:00 UTC diário — remove registros > 7 dias; (c) `whatsapp_audit_log_cleanup` aos domingos 04:00 UTC — retém 90 dias de auditoria. Migration é idempotente (faz unschedule dos jobs de mesmo nome antes de recriar) — pode rodar de novo sem erro. **Fase 2 completa.** Tag: `v1.2-fase2`.
+*   **Fase 7 (sessão atual): Período de observação em produção — 15–17 de Abril de 2026**
+    *   **Decisão:** antes de partir para a Fase 3 (consultas tipo "quanto gastei em saúde"), Marcelo vai usar o bot por 1–2 dias reais para gerar dados de uso genuínos.
+    *   **Critério de retomada:** pelo menos 15–20 despesas reais registradas por Marcelo e/ou Rossana via WhatsApp, distribuídas em pelo menos 3 categorias diferentes.
+    *   **O que avaliar ao voltar:**
+        *   Quais frases Gemini classificou como `unknown` sendo que eram despesa de verdade? (tunar prompt)
+        *   Quais despesas tiveram categoria errada? (tunar lista de exemplos)
+        *   Latência média do Gemini e da Edge Function? (baseline)
+        *   Alguma necessidade não prevista apareceu? (ajuste de escopo das fases 3–7)
+    *   **Sinais de alerta (retomar antes):** bot não respondendo, despesa duplicada, RLS/auth quebrando no SPA, spam por ausência de rate limit, qualquer mensagem de "⚠️ Travei aqui do meu lado" recorrente.
     *   Documentos vivos do assistente: `docs/PLANO_CONTINUIDADE.md` (roadmap até Fase 7) e `docs/RELATORIO_CASAFLOW_WHATSAPP.md` (estado técnico detalhado).
 
 ---
@@ -77,4 +86,4 @@ O CasaFlow não é apenas um rastreador de despesas, é uma plataforma de gestã
 3.  **Colaboração em Tempo Real:** Alterações feitas por um membro da família aparecem instantaneamente para os outros membros.
 
 ---
-*Última atualização: 15 de Abril de 2026 — **Fase 2 concluída** (F2.4 pg_cron + todos os cleanup jobs ativos).*
+*Última atualização: 15 de Abril de 2026 — Fase 2 concluída; entrando em período de observação de 1–2 dias antes da Fase 3.*

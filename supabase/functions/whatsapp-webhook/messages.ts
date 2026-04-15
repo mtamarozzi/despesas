@@ -49,3 +49,19 @@ export function msgRateLimited(): string {
     "Limite de mensagens por hora atingido. Em breve libera!",
   ]);
 }
+
+export function msgUndoSuccess(amountBRL: string, category: string, description: string): string {
+  return pick([
+    `↩️ Removi: ${amountBRL} ${description} (${category})`,
+    `Pronto, apaguei a última: ${amountBRL} de ${description} em ${category} 🗑️`,
+    `Desfeito! ${amountBRL} — ${description} (${category}) removido ✓`,
+  ]);
+}
+
+export function msgUndoNothing(): string {
+  return pick([
+    "Nada pra desfazer nos últimos 10 minutos 🤷",
+    "Não achei nenhuma despesa recente pra apagar (só os últimos 10min contam).",
+    "Sem nada novo pra remover — /desfazer só vale nos 10min após registrar.",
+  ]);
+}

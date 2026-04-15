@@ -41,6 +41,7 @@ O desenvolvimento seguiu uma trajetória de evolução rápida, focando inicialm
     *   **F2.6 concluída (2026-04-15):** migration `create_whatsapp_audit_log` aplicada. Tabela registra cada interação (message_id, phone_number, direction inbound/outbound, intent, action, success, latency_ms, error_code, raw_text) com índices por phone+ts e ts. É a fundação para F2.3 (rate limit por janela de 1h) e F2.5 (análise de frases que o Gemini mais erra).
     *   **F2.5 concluída (2026-04-15):** todas as strings do bot extraídas para `messages.ts` com 2–3 variações sorteadas em cada situação (confirma despesa, não autorizado, texto não reconhecido, erro de sistema, rate limit). Adicionado `audit.ts` com função `logAudit()` invocada em cada caminho do `index.ts` (duplicate, unauthorized, non_text, expense_inserted, context_saved, unknown_intent, handler_error). Função `registerExpense` passa a usar `msgConfirmExpense()`. Deploy via CLI validado.
     *   **Decisão (2026-04-15):** subcategorias hierárquicas (Alimentação → mercado/delivery/padaria) saem do escopo das fases 2–7 e viram **Fase 8** no `PLANO_CONTINUIDADE.md`. Motivo: mantém foco no MVP e permite decisão de schema (tabela vs lista controlada) baseada em uso real das categorias-mãe antes de adicionar complexidade.
+    *   **F2.2 concluída (2026-04-15) — comando /desfazer validado em produção:** schema Gemini ganhou intent `undo` (enum agora é `expense | unknown | undo`); prompt atualizado com exemplos ("desfazer", "apaga último", "errei, apaga", "anula"). Novo `handlers/undo.ts` busca a última despesa do usuário com `added_by_name LIKE '% (WhatsApp)'` criada nos últimos 10min, deleta, e responde com mensagem humanizada. Se não achar, retorna resposta de "nada pra desfazer". Teste end-to-end: (1) "paguei 50 no almoço" → inserção + confirmação; (2) "desfazer" → remoção + confirmação; (3) "desfazer" de novo → "nada pra desfazer". Auditoria com `action='expense_undone'` e `action='undo_nothing'` gravada em `whatsapp_audit_log`.
     *   Documentos vivos do assistente: `docs/PLANO_CONTINUIDADE.md` (roadmap até Fase 7) e `docs/RELATORIO_CASAFLOW_WHATSAPP.md` (estado técnico detalhado).
 
 ---
@@ -74,4 +75,4 @@ O CasaFlow não é apenas um rastreador de despesas, é uma plataforma de gestã
 3.  **Colaboração em Tempo Real:** Alterações feitas por um membro da família aparecem instantaneamente para os outros membros.
 
 ---
-*Última atualização: 15 de Abril de 2026 — F2.5 (mensagens humanizadas + audit log) concluída + Fase 8 de subcategorias adicionada ao plano.*
+*Última atualização: 15 de Abril de 2026 — F2.2 (comando /desfazer) concluída e validada em produção.*

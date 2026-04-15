@@ -35,7 +35,7 @@ export interface WhatsappUser {
   active: boolean;
 }
 
-export type Intent = "expense" | "unknown";
+export type Intent = "expense" | "unknown" | "undo";
 
 export interface ExpenseExtraction {
   descricao: string;

@@ -12,11 +12,13 @@ import {
 import { extractText, log, stripWhatsappJid, todayISO } from "./utils.ts";
 import {
   msgNonText,
+  msgRateLimited,
   msgSystemError,
   msgUnauthorized,
   msgUnknown,
 } from "./messages.ts";
 import { logAudit } from "./audit.ts";
+import { isRateLimited } from "./rate-limit.ts";
 
 Deno.serve(async (req: Request) => {
   const started = Date.now();
@@ -87,6 +89,20 @@ Deno.serve(async (req: Request) => {
       phone_number: phone,
       direction: "inbound",
       action: "unauthorized",
+      success: true,
+      latency_ms: Date.now() - started,
+      raw_text: rawText,
+    });
+    return new Response("ok", { status: 200 });
+  }
+
+  if (await isRateLimited(phone)) {
+    await sendText(phone, msgRateLimited());
+    await logAudit({
+      message_id: messageId,
+      phone_number: phone,
+      direction: "inbound",
+      action: "rate_limited",
       success: true,
       latency_ms: Date.now() - started,
       raw_text: rawText,

@@ -1,8 +1,7 @@
-// Expense intent handler — full implementation in F1.5.
-
 import type { ExpenseExtraction, WhatsappUser } from "../types.ts";
 import { getServiceClient } from "../supabase-client.ts";
 import { formatBRL, log } from "../utils.ts";
+import { msgConfirmExpense } from "../messages.ts";
 
 export async function registerExpense(
   user: WhatsappUser,
@@ -24,5 +23,5 @@ export async function registerExpense(
     throw error;
   }
   log("expense_inserted", { phone: user.phone_number, amount: payload.valor });
-  return `✅ ${formatBRL(payload.valor)} em ${payload.categoria} registrado (${payload.descricao})`;
+  return msgConfirmExpense(formatBRL(payload.valor), payload.categoria, payload.descricao);
 }

@@ -39,6 +39,8 @@ O desenvolvimento seguiu uma trajetória de evolução rápida, focando inicialm
 *   **Fase 6: Fase 2 do Assistente WhatsApp (Em andamento — Abril 2026)**
     *   **F2.0 concluída (2026-04-15):** `App.jsx` refatorado com self-healing do `fetchHousehold` — extraído helper `findOrCreateDefaultHousehold` e alterada a ordem de tentativa: agora primeiro tenta `maybeSingle` pelo id do metadata (não mais `.single()` que bloqueava por erro); se vier vazio, cai automaticamente no fluxo de buscar/criar "CasaFlow" e atualizar o metadata do usuário. Evita que nova limpeza/rotação do banco no futuro trave o SPA de novo.
     *   **F2.6 concluída (2026-04-15):** migration `create_whatsapp_audit_log` aplicada. Tabela registra cada interação (message_id, phone_number, direction inbound/outbound, intent, action, success, latency_ms, error_code, raw_text) com índices por phone+ts e ts. É a fundação para F2.3 (rate limit por janela de 1h) e F2.5 (análise de frases que o Gemini mais erra).
+    *   **F2.5 concluída (2026-04-15):** todas as strings do bot extraídas para `messages.ts` com 2–3 variações sorteadas em cada situação (confirma despesa, não autorizado, texto não reconhecido, erro de sistema, rate limit). Adicionado `audit.ts` com função `logAudit()` invocada em cada caminho do `index.ts` (duplicate, unauthorized, non_text, expense_inserted, context_saved, unknown_intent, handler_error). Função `registerExpense` passa a usar `msgConfirmExpense()`. Deploy via CLI validado.
+    *   **Decisão (2026-04-15):** subcategorias hierárquicas (Alimentação → mercado/delivery/padaria) saem do escopo das fases 2–7 e viram **Fase 8** no `PLANO_CONTINUIDADE.md`. Motivo: mantém foco no MVP e permite decisão de schema (tabela vs lista controlada) baseada em uso real das categorias-mãe antes de adicionar complexidade.
     *   Documentos vivos do assistente: `docs/PLANO_CONTINUIDADE.md` (roadmap até Fase 7) e `docs/RELATORIO_CASAFLOW_WHATSAPP.md` (estado técnico detalhado).
 
 ---
@@ -72,4 +74,4 @@ O CasaFlow não é apenas um rastreador de despesas, é uma plataforma de gestã
 3.  **Colaboração em Tempo Real:** Alterações feitas por um membro da família aparecem instantaneamente para os outros membros.
 
 ---
-*Última atualização: 15 de Abril de 2026 — F2.6 (tabela whatsapp_audit_log) concluída.*
+*Última atualização: 15 de Abril de 2026 — F2.5 (mensagens humanizadas + audit log) concluída + Fase 8 de subcategorias adicionada ao plano.*

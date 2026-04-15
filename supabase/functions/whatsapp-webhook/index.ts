@@ -9,14 +9,16 @@ import {
   savePendingContext,
 } from "./handlers/context.ts";
 import { extractText, log, stripWhatsappJid, todayISO } from "./utils.ts";
-
-const MSG_UNAUTHORIZED = "Número não autorizado no CasaFlow.";
-const MSG_NON_TEXT = "Só entendo mensagens de texto por enquanto. Em breve: áudio e foto.";
-const MSG_UNKNOWN =
-  "Ainda não entendi essa mensagem. Tenta algo como: \"paguei 120 de luz hoje\".";
-const MSG_SYSTEM_ERROR = "⚠️ Tive um problema agora. Pode tentar de novo em alguns segundos?";
+import {
+  msgNonText,
+  msgSystemError,
+  msgUnauthorized,
+  msgUnknown,
+} from "./messages.ts";
+import { logAudit } from "./audit.ts";
 
 Deno.serve(async (req: Request) => {
+  const started = Date.now();
   if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
 
   const expectedToken = Deno.env.get("EVOLUTION_WEBHOOK_TOKEN");
@@ -45,6 +47,7 @@ Deno.serve(async (req: Request) => {
   const supabase = getServiceClient();
   const phone = stripWhatsappJid(data.key.remoteJid);
   const messageId = data.key.id;
+  const rawText = extractText(data.message).trim();
 
   const { data: seen } = await supabase
     .from("whatsapp_messages_seen")
@@ -53,6 +56,14 @@ Deno.serve(async (req: Request) => {
     .maybeSingle();
   if (seen) {
     log("duplicate_event", { message_id: messageId });
+    await logAudit({
+      message_id: messageId,
+      phone_number: phone,
+      direction: "inbound",
+      action: "duplicate_ignored",
+      success: true,
+      raw_text: rawText,
+    });
     return new Response("ok", { status: 200 });
   }
   await supabase
@@ -69,19 +80,35 @@ Deno.serve(async (req: Request) => {
 
   if (!user) {
     log("unauthorized_number", { phone });
-    await sendText(phone, MSG_UNAUTHORIZED);
+    await sendText(phone, msgUnauthorized());
+    await logAudit({
+      message_id: messageId,
+      phone_number: phone,
+      direction: "inbound",
+      action: "unauthorized",
+      success: true,
+      latency_ms: Date.now() - started,
+      raw_text: rawText,
+    });
     return new Response("ok", { status: 200 });
   }
 
-  const text = extractText(data.message).trim();
-  if (!text) {
-    await sendText(phone, MSG_NON_TEXT);
+  if (!rawText) {
+    await sendText(phone, msgNonText());
+    await logAudit({
+      message_id: messageId,
+      phone_number: phone,
+      direction: "inbound",
+      action: "non_text",
+      success: true,
+      latency_ms: Date.now() - started,
+    });
     return new Response("ok", { status: 200 });
   }
 
   try {
     const pending = await getPendingContext(phone);
-    const combinedText = pending ? `${pending}\n${text}` : text;
+    const combinedText = pending ? `${pending}\n${rawText}` : rawText;
     log("interpreting", { phone, has_pending: !!pending, length: combinedText.length });
 
     const result = await interpret(combinedText, todayISO());
@@ -90,21 +117,62 @@ Deno.serve(async (req: Request) => {
       const confirmation = await registerExpense(user, result.payload);
       await clearPendingContext(phone);
       await sendText(phone, confirmation);
+      await logAudit({
+        message_id: messageId,
+        phone_number: phone,
+        direction: "inbound",
+        intent: "expense",
+        action: "expense_inserted",
+        success: true,
+        latency_ms: Date.now() - started,
+        raw_text: rawText,
+      });
       return new Response("ok", { status: 200 });
     }
 
     if (result.intent === "expense" && result.erro) {
       await savePendingContext(phone, combinedText, result.erro);
       await sendText(phone, result.erro);
+      await logAudit({
+        message_id: messageId,
+        phone_number: phone,
+        direction: "inbound",
+        intent: "expense",
+        action: "context_saved",
+        success: true,
+        latency_ms: Date.now() - started,
+        raw_text: rawText,
+      });
       return new Response("ok", { status: 200 });
     }
 
     await clearPendingContext(phone);
-    await sendText(phone, MSG_UNKNOWN);
+    await sendText(phone, msgUnknown());
+    await logAudit({
+      message_id: messageId,
+      phone_number: phone,
+      direction: "inbound",
+      intent: "unknown",
+      action: "unknown_intent",
+      success: true,
+      latency_ms: Date.now() - started,
+      raw_text: rawText,
+    });
     return new Response("ok", { status: 200 });
   } catch (err) {
-    log("handler_error", { error: (err as Error).message, phone });
-    await sendText(phone, MSG_SYSTEM_ERROR);
+    const errorMsg = (err as Error).message;
+    log("handler_error", { error: errorMsg, phone });
+    await sendText(phone, msgSystemError());
+    await logAudit({
+      message_id: messageId,
+      phone_number: phone,
+      direction: "inbound",
+      action: "handler_error",
+      success: false,
+      latency_ms: Date.now() - started,
+      error_code: errorMsg.slice(0, 100),
+      raw_text: rawText,
+    });
     return new Response("ok", { status: 200 });
   }
 });

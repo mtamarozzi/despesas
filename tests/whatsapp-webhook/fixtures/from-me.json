@@ -1,0 +1,17 @@
+{
+  "event": "messages.upsert",
+  "instance": "casaflow",
+  "data": {
+    "key": {
+      "remoteJid": "5514998885355@s.whatsapp.net",
+      "fromMe": true,
+      "id": "MSG_FROMME_REPLACE"
+    },
+    "message": {
+      "conversation": "mensagem enviada pelo próprio bot"
+    },
+    "messageType": "conversation",
+    "messageTimestamp": 1744742400,
+    "pushName": "CasaFlow Bot"
+  }
+}

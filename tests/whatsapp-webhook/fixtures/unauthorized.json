@@ -1,0 +1,17 @@
+{
+  "event": "messages.upsert",
+  "instance": "casaflow",
+  "data": {
+    "key": {
+      "remoteJid": "5511900000000@s.whatsapp.net",
+      "fromMe": false,
+      "id": "MSG_UNAUTH_REPLACE"
+    },
+    "message": {
+      "conversation": "oi, quero registrar um gasto"
+    },
+    "messageType": "conversation",
+    "messageTimestamp": 1744742400,
+    "pushName": "Desconhecido"
+  }
+}

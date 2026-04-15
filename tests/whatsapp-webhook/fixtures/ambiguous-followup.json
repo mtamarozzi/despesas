@@ -1,0 +1,17 @@
+{
+  "event": "messages.upsert",
+  "instance": "casaflow",
+  "data": {
+    "key": {
+      "remoteJid": "5514998885355@s.whatsapp.net",
+      "fromMe": false,
+      "id": "MSG_AMBIG_FOLLOW_REPLACE"
+    },
+    "message": {
+      "conversation": "foi mercado"
+    },
+    "messageType": "conversation",
+    "messageTimestamp": 1744742460,
+    "pushName": "Marcelo"
+  }
+}

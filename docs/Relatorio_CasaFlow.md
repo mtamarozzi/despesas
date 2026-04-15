@@ -29,6 +29,7 @@ O desenvolvimento seguiu uma trajetória de evolução rápida, focando inicialm
     *   **F1.1 concluída (2026-04-15):** migration `create_whatsapp_messages_seen` aplicada — tabela de idempotência do webhook (evita processar eventos duplicados da Evolution).
     *   **F1.2 concluída (2026-04-15):** `supabase init` + `supabase link --project-ref jeyllykzwtixfzeybkkl` no diretório `ethereal-ledger/` (CLI oficial versão 2.90.0).
     *   **F1.3 concluída (2026-04-15):** scaffold modular da Edge Function `whatsapp-webhook/` com 10 arquivos (handler HTTP, clientes Evolution/Gemini/Supabase, types, utils, handlers, prompts). Lógica completa será adicionada em F1.4 e F1.5.
+    *   **F1.4 concluída (2026-04-15):** integração real com **Gemini 2.5 Flash** via `fetch` nativo. `responseSchema` unificado (intent + extração numa chamada, decisão D1) + prompt sistema em pt-BR com regras das 6 categorias, resolução de datas relativas, critérios `pago`/`pendente` e gatilhos de erro. `temperature=0.2` para determinismo.
     *   Documentos vivos do assistente: `docs/PLANO_CONTINUIDADE.md` (roadmap até Fase 7) e `docs/RELATORIO_CASAFLOW_WHATSAPP.md` (estado técnico detalhado).
 
 ---
@@ -62,4 +63,4 @@ O CasaFlow não é apenas um rastreador de despesas, é uma plataforma de gestã
 3.  **Colaboração em Tempo Real:** Alterações feitas por um membro da família aparecem instantaneamente para os outros membros.
 
 ---
-*Última atualização: 15 de Abril de 2026 — F1.3 (scaffold da Edge Function) concluída*
+*Última atualização: 15 de Abril de 2026 — F1.4 (Gemini 2.5 Flash + schema + prompt) concluída*

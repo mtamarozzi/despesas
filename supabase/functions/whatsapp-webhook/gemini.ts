@@ -1,13 +1,10 @@
 import { GEMINI_RESPONSE_SCHEMA } from "./schemas.ts";
+import { EXPENSE_SYSTEM_PROMPT } from "./prompts.ts";
 import type { GeminiResult } from "./types.ts";
 import { log } from "./utils.ts";
 
 const MODEL = "gemini-2.5-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
-
-const SYSTEM_PROMPT_TEMPLATE = await Deno.readTextFile(
-  new URL("./prompts/expense.md", import.meta.url),
-);
 
 interface GeminiRawResponse {
   candidates?: Array<{
@@ -33,7 +30,7 @@ export async function interpret(message: string, todayISO: string): Promise<Gemi
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY secret missing");
 
-  const systemPrompt = SYSTEM_PROMPT_TEMPLATE.replaceAll("{{TODAY_ISO}}", todayISO);
+  const systemPrompt = EXPENSE_SYSTEM_PROMPT.replaceAll("{{TODAY_ISO}}", todayISO);
   const started = Date.now();
 
   const res = await fetch(`${ENDPOINT}?key=${apiKey}`, {

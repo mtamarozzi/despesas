@@ -32,6 +32,8 @@ O desenvolvimento seguiu uma trajetória de evolução rápida, focando inicialm
     *   **F1.4 concluída (2026-04-15):** integração real com **Gemini 2.5 Flash** via `fetch` nativo. `responseSchema` unificado (intent + extração numa chamada, decisão D1) + prompt sistema em pt-BR com regras das 6 categorias, resolução de datas relativas, critérios `pago`/`pendente` e gatilhos de erro. `temperature=0.2` para determinismo.
     *   **F1.5 concluída (2026-04-15):** router de intent ligado no `index.ts` + fluxo completo de clarificação multi-turno via tabela `whatsapp_context`. 3 caminhos: (a) payload completo → insere despesa + limpa contexto + confirma; (b) `intent=expense` com `erro` → grava contexto com texto combinado + pergunta de clarificação; (c) `intent=unknown` → limpa contexto + mensagem padrão. Ao receber nova mensagem com contexto pendente, textos são concatenados antes de chamar o Gemini (resolve "gastei 80" → "de quê?" → "mercado" numa inserção única).
     *   **F1.6 concluída (2026-04-15):** suite de smoke tests via curl em `tests/whatsapp-webhook/` com 6 casos (token inválido, fromMe, número bloqueado, despesa clara, despesa ambígua, follow-up de clarificação). Fixtures JSON + script `run.sh` que injeta IDs únicos por execução para evitar bloqueio pela idempotência.
+    *   **F1.7 concluída (2026-04-15):** 3 secrets (`GEMINI_API_KEY`, `EVOLUTION_API_KEY`, `EVOLUTION_WEBHOOK_TOKEN`) configurados no painel do Supabase. Evolution API key rotacionada após exposição prévia.
+    *   **F1.8 em andamento (2026-04-15):** Edge Function deployada via `supabase functions deploy --no-verify-jwt` após hotfix — prompt do Gemini extraído para `prompts.ts` (inlineado como string TS) porque `Deno.readTextFile` de `.md` com `import.meta.url` falha no runtime da Edge Function. Smoke test de auth passou (401 com token inválido); falta configurar webhook real na Evolution para teste end-to-end.
     *   Documentos vivos do assistente: `docs/PLANO_CONTINUIDADE.md` (roadmap até Fase 7) e `docs/RELATORIO_CASAFLOW_WHATSAPP.md` (estado técnico detalhado).
 
 ---
@@ -65,4 +67,4 @@ O CasaFlow não é apenas um rastreador de despesas, é uma plataforma de gestã
 3.  **Colaboração em Tempo Real:** Alterações feitas por um membro da família aparecem instantaneamente para os outros membros.
 
 ---
-*Última atualização: 15 de Abril de 2026 — F1.6 (suite de smoke tests via curl) concluída*
+*Última atualização: 15 de Abril de 2026 — F1.8 deploy realizado + hotfix do prompt loading*

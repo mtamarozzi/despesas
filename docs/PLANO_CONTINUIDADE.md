@@ -197,6 +197,26 @@ ethereal-ledger/
 
 ---
 
+### Fase 8 — Subcategorias hierárquicas
+
+**Objetivo:** dividir cada categoria-mãe em sub-itens estruturados (Alimentação → mercado, almoço, delivery, padaria, lanche...) pra permitir relatórios granulares e metas mais finas ("máximo R$ 300/mês em delivery").
+
+**Decisão (2026-04-15):** fora do escopo das fases 2–7. Entra só depois da Fase 7 (metas por mãe) estar sólida — assim evaluamos se subcategoria é necessário com dados reais, ou se a descrição livre em `expenses.name` já basta.
+
+**Entregáveis:**
+
+| # | Item |
+|---|---|
+| 8.1 | Decidir arquitetura: tabela `categories` (id, parent_id, name, household_id) OU campo `expenses.subcategory text` + lista controlada no prompt |
+| 8.2 | Migration correspondente + seed das ~30 subcategorias óbvias (mercado, uber, streaming, etc.) |
+| 8.3 | Atualizar `schemas.ts` do Gemini incluindo `subcategoria` opcional + atualizar prompt `expense` com tabela parent→subs |
+| 8.4 | `registerExpense` grava `subcategory` quando Gemini preencher |
+| 8.5 | Frontend: seletor em cascata no New Entry; fallback "Outros" quando sub não se aplica |
+| 8.6 | Relatórios: drilldown por categoria mãe → agregado por sub |
+| 8.7 | (se Fase 7 concluída) meta por subcategoria além da por mãe |
+
+---
+
 ## 3. Decisões de arquitetura que precisam da tua confirmação
 
 | # | Decisão | Opção A | Opção B | Recomendação |

@@ -42,63 +42,60 @@ function App() {
     };
   }, []);
 
+  const findOrCreateDefaultHousehold = async () => {
+    const { data: existing } = await supabase
+      .from('households')
+      .select('id, name, invite_code')
+      .eq('name', 'CasaFlow')
+      .maybeSingle();
+    if (existing) return existing;
+
+    const { data: created, error } = await supabase
+      .from('households')
+      .insert([{
+        name: 'CasaFlow',
+        invite_code: 'CASAF' + Math.random().toString(36).substring(7).toUpperCase(),
+      }])
+      .select()
+      .single();
+    if (error) {
+      console.error('Erro ao criar família padrão:', error.message);
+      return null;
+    }
+    return created;
+  };
+
   const fetchHousehold = async (user) => {
     setHouseholdLoading(true);
 
     let householdId = user.user_metadata?.household_id;
+    let houseData = null;
 
-    if (!householdId) {
-      // Tenta encontrar a household padrão "CasaFlow" ou cria uma nova
-      const { data: existingHouse, error: searchError } = await supabase
+    if (householdId) {
+      const { data } = await supabase
         .from('households')
         .select('id, name, invite_code')
-        .eq('name', 'CasaFlow')
+        .eq('id', householdId)
         .maybeSingle();
+      houseData = data;
+    }
 
-      if (existingHouse) {
-        householdId = existingHouse.id;
-      } else {
-        const { data: newHouse, error: createError } = await supabase
-          .from('households')
-          .insert([{ name: 'CasaFlow', invite_code: 'CASAF' + Math.random().toString(36).substring(7).toUpperCase() }])
-          .select()
-          .single();
-        
-        if (newHouse) householdId = newHouse.id;
-        else {
-          console.error('Erro ao criar família padrão:', createError);
-          setHouseholdLoading(false);
-          return;
-        }
+    // Self-heal: metadata ausente OU apontando para household inexistente (ex: após limpeza de banco).
+    if (!houseData) {
+      houseData = await findOrCreateDefaultHousehold();
+      if (!houseData) {
+        setHouseholdLoading(false);
+        return;
       }
-
-      if (householdId) {
-        // Vincula o usuário à household permanentemente nos metadados
-        await supabase.auth.updateUser({
-          data: { household_id: householdId }
-        });
+      if (houseData.id !== householdId) {
+        await supabase.auth.updateUser({ data: { household_id: houseData.id } });
+        householdId = houseData.id;
       }
     }
 
-    // Busca detalhes da família (nome e código de convite)
-    const { data: houseData, error } = await supabase
-      .from('households')
-      .select('id, name, invite_code')
-      .eq('id', householdId)
-      .single();
-
-    if (error) {
-      console.error('Erro ao buscar família:', error.message);
-      setHouseholdLoading(false);
-      return;
-    }
-
-    if (houseData) {
-      setHousehold(houseData);
-      await fetchExpenses(householdId);
-      subscribeRealtime(householdId);
-    }
-
+    setHousehold(houseData);
+    await fetchExpenses(householdId);
+    subscribeRealtime(householdId);
     setHouseholdLoading(false);
   };
 

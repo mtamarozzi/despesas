@@ -36,6 +36,8 @@ O desenvolvimento seguiu uma trajetória de evolução rápida, focando inicialm
     *   **F1.8 concluída (2026-04-15):** Edge Function deployada via `supabase functions deploy --no-verify-jwt` após hotfix — prompt do Gemini extraído para `prompts.ts` (inlineado como string TS) porque `Deno.readTextFile` de `.md` com `import.meta.url` falha no runtime da Edge Function. Webhook da instância `casaflow` configurado via script `scripts/configure-webhook.ps1` apontando para a Edge Function com `Authorization: Bearer` + event `MESSAGES_UPSERT`. Adicionados 2 números de teste em `whatsapp_users` (Rossana + linha 2 do Marcelo) pra contornar a limitação de `fromMe=true` quando o bot compartilha número com o dono.
     *   **F1.9 concluída (2026-04-15) — MVP VALIDADO EM PRODUÇÃO:** teste end-to-end real passou de ambas as linhas (Rossana e Marcelo linha 2) com a mensagem "paguei 120 de luz hoje". Gemini retornou descrição "conta de luz", categoria Habitação, data correta, status "pago". 2 despesas inseridas em `expenses` com `added_by_name` correto. Confirmação no WhatsApp chegou em ~5 segundos: "✅ R$ 120,00 em Habitação registrado (conta de luz)". **Fase 1 completa.**
     *   **F1-hotfix SPA (2026-04-15):** após deploy na Vercel (casa.hubautomacao.pro), o frontend travou no loading "Configurando CasaFlow...". Causa: o `user_metadata.household_id` dos usuários apontava para households antigos deletados na limpeza da F0. Fix: renomeado household atual de "Casa" para "CasaFlow" (bate com o search do `App.jsx:57`) e atualizado `auth.users.raw_user_meta_data.household_id` de Marcelo e Rossana para o UUID correto `f5a5bd3f-9fbf-4d78-9b18-8d51b998b35e`. Usuários precisaram fazer logout/login para o JWT pegar o metadata novo. App voltou ao normal, mostrando as 2 despesas de teste.
+*   **Fase 6: Fase 2 do Assistente WhatsApp (Em andamento — Abril 2026)**
+    *   **F2.0 concluída (2026-04-15):** `App.jsx` refatorado com self-healing do `fetchHousehold` — extraído helper `findOrCreateDefaultHousehold` e alterada a ordem de tentativa: agora primeiro tenta `maybeSingle` pelo id do metadata (não mais `.single()` que bloqueava por erro); se vier vazio, cai automaticamente no fluxo de buscar/criar "CasaFlow" e atualizar o metadata do usuário. Evita que nova limpeza/rotação do banco no futuro trave o SPA de novo.
     *   Documentos vivos do assistente: `docs/PLANO_CONTINUIDADE.md` (roadmap até Fase 7) e `docs/RELATORIO_CASAFLOW_WHATSAPP.md` (estado técnico detalhado).
 
 ---
@@ -69,4 +71,4 @@ O CasaFlow não é apenas um rastreador de despesas, é uma plataforma de gestã
 3.  **Colaboração em Tempo Real:** Alterações feitas por um membro da família aparecem instantaneamente para os outros membros.
 
 ---
-*Última atualização: 15 de Abril de 2026 — **Fase 1 concluída + hotfix de household metadata no SPA**.*
+*Última atualização: 15 de Abril de 2026 — **Fase 2 iniciada; F2.0 (self-heal do SPA) concluída**.*

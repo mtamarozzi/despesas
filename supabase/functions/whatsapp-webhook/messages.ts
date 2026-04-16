@@ -121,3 +121,20 @@ export function msgQueryEmpty(
     `Não achei nada${who} nesse período (${period}).`,
   ]);
 }
+
+export function msgImageUnsupported(motivo?: string): string {
+  const base = pick([
+    "Essa imagem não parece cupom fiscal nem comprovante de Pix.",
+    "Não consegui ler isso como cupom ou Pix.",
+    "Hmm, essa foto não bateu com cupom nem comprovante de transferência.",
+  ]);
+  const tail = motivo ? ` (${motivo}).` : ".";
+  return `${base}${tail} Manda outra ou descreve por texto.`;
+}
+
+export function msgImageDownloadError(): string {
+  return pick([
+    "⚠️ Não consegui baixar a imagem aqui. Tenta enviar de novo?",
+    "⚠️ A foto não chegou inteira. Reenvia, por favor.",
+  ]);
+}

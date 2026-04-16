@@ -5,6 +5,7 @@ import { interpret } from "./gemini.ts";
 import { registerExpense } from "./handlers/expense.ts";
 import { handleQuery } from "./handlers/query.ts";
 import { undoLastExpense } from "./handlers/undo.ts";
+import { handleImage } from "./handlers/image.ts";
 import {
   clearPendingContext,
   getPendingContext,
@@ -107,6 +108,26 @@ Deno.serve(async (req: Request) => {
       success: true,
       latency_ms: Date.now() - started,
       raw_text: rawText,
+    });
+    return new Response("ok", { status: 200 });
+  }
+
+  const messageType = data.messageType ?? "";
+
+  if (messageType === "imageMessage") {
+    const caption = data.message?.imageMessage?.caption ?? "";
+    const result = await handleImage(user, messageId, caption, todayISO());
+    await sendText(phone, result.message);
+    await logAudit({
+      message_id: messageId,
+      phone_number: phone,
+      direction: "inbound",
+      intent: "expense",
+      action: result.action,
+      success: result.success,
+      latency_ms: Date.now() - started,
+      raw_text: caption || "[imagem sem caption]",
+      error_code: result.errorCode,
     });
     return new Response("ok", { status: 200 });
   }

@@ -35,3 +35,26 @@ export const GEMINI_RESPONSE_SCHEMA = {
   },
   required: ["intent"],
 } as const;
+
+export const IMAGE_INTENT_ENUM = ["expense", "unsupported"] as const;
+
+export const IMAGE_EXPENSE_SCHEMA = {
+  type: "object",
+  properties: {
+    intent: { type: "string", enum: [...IMAGE_INTENT_ENUM] },
+    payload: {
+      type: "object",
+      nullable: true,
+      properties: {
+        descricao: { type: "string" },
+        valor: { type: "number" },
+        categoria: { type: "string", enum: [...CATEGORIAS] },
+        data: { type: "string" },
+        status: { type: "string", enum: [...STATUS_ENUM] },
+      },
+      required: ["descricao", "valor", "categoria", "data", "status"],
+    },
+    motivo: { type: "string", nullable: true },
+  },
+  required: ["intent"],
+} as const;

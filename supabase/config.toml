@@ -4,6 +4,14 @@
 # working directory name when running `supabase init`.
 project_id = "Despesas"
 
+# Edge Functions que usam auth custom (bearer token próprio) precisam de verify_jwt=false
+# para que a Supabase platform não rejeite a requisição antes do nosso código rodar.
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.whatsapp-reminders]
+verify_jwt = false
+
 [api]
 enabled = true
 # Port to use for the API URL.

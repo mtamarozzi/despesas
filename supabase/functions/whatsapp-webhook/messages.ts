@@ -13,6 +13,14 @@ export function msgConfirmExpense(amountBRL: string, category: string, descripti
   ]);
 }
 
+export function msgConfirmIncome(amountBRL: string, category: string, description: string): string {
+  return pick([
+    `💰 Receita de ${amountBRL} registrada (${category} — ${description})`,
+    `Entrou: ${amountBRL} em ${category} (${description}) ✓`,
+    `Anotei a entrada: ${amountBRL} de ${description} → ${category} 📥`,
+  ]);
+}
+
 export function msgUnauthorized(): string {
   return pick([
     "Oi! Esse número ainda não está autorizado no CasaFlow.",
@@ -120,6 +128,125 @@ export function msgQueryEmpty(
     `Nenhuma despesa${who} encontrada em ${period} 🤷`,
     `Não achei nada${who} nesse período (${period}).`,
   ]);
+}
+
+const MONTH_NAMES_PT = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+function formatMonthYear(monthISO: string): string {
+  const [y, m] = monthISO.split("-");
+  const idx = Math.max(0, Math.min(11, Number(m) - 1));
+  return `${MONTH_NAMES_PT[idx]}/${y}`;
+}
+
+export interface BalanceData {
+  monthISO: string;
+  received: string;
+  paidExpenses: string;
+  pendingExpenses: string;
+  realBalance: string;
+  projectedBalance: string;
+  empty: boolean;
+}
+
+export function msgBalance(d: BalanceData): string {
+  const head = `📊 ${formatMonthYear(d.monthISO)}`;
+  if (d.empty) {
+    return `${head}\nAinda não tem movimentação nesse mês.`;
+  }
+  return [
+    head,
+    `Receitas: ${d.received}`,
+    `Despesas pagas: ${d.paidExpenses}`,
+    `Pendentes: ${d.pendingExpenses}`,
+    `Saldo real: ${d.realBalance}`,
+    `Saldo projetado: ${d.projectedBalance}`,
+  ].join("\n");
+}
+
+export interface GoalCheckRow {
+  category: string;
+  limit: string;
+  spent: string;
+  remaining: string;
+  percentUsed: number;
+}
+
+export interface GoalCheckData {
+  goals: GoalCheckRow[];
+  categoryFilter: string | null;
+  monthISO: string;
+}
+
+function goalEmoji(percent: number): string {
+  if (percent >= 100) return "🔴";
+  if (percent >= 80) return "⚠️";
+  if (percent >= 60) return "🟡";
+  return "✅";
+}
+
+export function msgGoalCheck(data: GoalCheckData): string {
+  const month = formatMonthYear(data.monthISO);
+  if (data.categoryFilter && data.goals.length === 1) {
+    const g = data.goals[0];
+    const emoji = goalEmoji(g.percentUsed);
+    return [
+      `${emoji} ${g.category} em ${month}`,
+      `Meta: ${g.limit}`,
+      `Gasto: ${g.spent} (${g.percentUsed}%)`,
+      `Restante: ${g.remaining}`,
+    ].join("\n");
+  }
+  const lines = [`🎯 Metas ${month}`];
+  for (const g of data.goals) {
+    lines.push(
+      `${goalEmoji(g.percentUsed)} ${g.category}: ${g.spent}/${g.limit} (${g.percentUsed}%)`,
+    );
+  }
+  return lines.join("\n");
+}
+
+export function msgGoalCheckEmpty(category: string | null): string {
+  if (category) {
+    return `Não achei meta configurada pra "${category}" esse mês 🤷`;
+  }
+  return "Ainda não tem metas configuradas esse mês. Configure em Ajustes → Metas.";
+}
+
+export interface FullReportGoal {
+  category: string;
+  percentUsed: number;
+  remaining: string;
+}
+
+export interface FullReportData {
+  monthISO: string;
+  received: string;
+  paidExpenses: string;
+  pendingExpenses: string;
+  realBalance: string;
+  projectedBalance: string;
+  topGoals: FullReportGoal[];
+}
+
+export function msgFullReport(d: FullReportData): string {
+  const lines = [
+    `📋 Resumo — ${formatMonthYear(d.monthISO)}`,
+    `Receitas: ${d.received}`,
+    `Pagas: ${d.paidExpenses} · Pendentes: ${d.pendingExpenses}`,
+    `Saldo real: ${d.realBalance}`,
+    `Projetado: ${d.projectedBalance}`,
+  ];
+  if (d.topGoals.length > 0) {
+    lines.push("");
+    lines.push("Top metas:");
+    for (const g of d.topGoals) {
+      lines.push(`${goalEmoji(g.percentUsed)} ${g.category} (${g.percentUsed}%) — resta ${g.remaining}`);
+    }
+  }
+  return lines.join("\n");
 }
 
 export function msgImageUnsupported(motivo?: string): string {

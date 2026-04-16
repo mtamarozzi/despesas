@@ -1,9 +1,17 @@
-import type { ExpenseExtraction, WhatsappUser } from "../types.ts";
-import { CATEGORIAS, STATUS_ENUM } from "../schemas.ts";
+import type {
+  ExpenseExtraction,
+  HouseholdCategories,
+  WhatsappUser,
+} from "../types.ts";
+import { EXPENSE_STATUS_ENUM } from "../schemas.ts";
 import { getMediaBase64 } from "../evolution.ts";
 import { interpretImage } from "../gemini.ts";
 import { registerExpense } from "./expense.ts";
-import { msgImageDownloadError, msgImageUnsupported, msgSystemError } from "../messages.ts";
+import {
+  msgImageDownloadError,
+  msgImageUnsupported,
+  msgSystemError,
+} from "../messages.ts";
 import { log } from "../utils.ts";
 
 export interface ImageHandlerResult {
@@ -20,8 +28,7 @@ export interface ImageHandlerResult {
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const VALID_CATEGORIAS = new Set<string>(CATEGORIAS);
-const VALID_STATUS = new Set<string>(STATUS_ENUM);
+const VALID_STATUS = new Set<string>(EXPENSE_STATUS_ENUM);
 
 function isValidPayload(p: unknown): p is ExpenseExtraction {
   if (!p || typeof p !== "object") return false;
@@ -29,8 +36,9 @@ function isValidPayload(p: unknown): p is ExpenseExtraction {
   return (
     typeof e.descricao === "string" && e.descricao.length > 0 &&
     typeof e.valor === "number" && Number.isFinite(e.valor) && e.valor > 0 &&
-    typeof e.categoria === "string" && VALID_CATEGORIAS.has(e.categoria) &&
-    typeof e.data === "string" && ISO_DATE.test(e.data) && !Number.isNaN(Date.parse(e.data)) &&
+    typeof e.categoria === "string" && e.categoria.length > 0 &&
+    typeof e.data === "string" && ISO_DATE.test(e.data) &&
+    !Number.isNaN(Date.parse(e.data)) &&
     typeof e.status === "string" && VALID_STATUS.has(e.status)
   );
 }
@@ -40,6 +48,7 @@ export async function handleImage(
   messageId: string,
   caption: string,
   todayISO: string,
+  categories: HouseholdCategories,
 ): Promise<ImageHandlerResult> {
   log("image_received", {
     phone: user.phone_number,
@@ -62,7 +71,13 @@ export async function handleImage(
 
   let result;
   try {
-    result = await interpretImage(media.base64, media.mimetype, caption, todayISO);
+    result = await interpretImage(
+      media.base64,
+      media.mimetype,
+      caption,
+      todayISO,
+      categories,
+    );
   } catch (err) {
     return {
       message: msgSystemError(),

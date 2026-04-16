@@ -3,9 +3,11 @@ import { getServiceClient } from "./supabase-client.ts";
 import { sendText } from "./evolution.ts";
 import { interpret } from "./gemini.ts";
 import { registerExpense } from "./handlers/expense.ts";
+import { registerIncome } from "./handlers/income.ts";
 import { handleQuery } from "./handlers/query.ts";
 import { undoLastExpense } from "./handlers/undo.ts";
 import { handleImage } from "./handlers/image.ts";
+import { fetchHouseholdCategories } from "./categories.ts";
 import {
   clearPendingContext,
   getPendingContext,
@@ -116,7 +118,14 @@ Deno.serve(async (req: Request) => {
 
   if (messageType === "imageMessage") {
     const caption = data.message?.imageMessage?.caption ?? "";
-    const result = await handleImage(user, messageId, caption, todayISO());
+    const categories = await fetchHouseholdCategories(user.household_id);
+    const result = await handleImage(
+      user,
+      messageId,
+      caption,
+      todayISO(),
+      categories,
+    );
     await sendText(phone, result.message);
     await logAudit({
       message_id: messageId,
@@ -150,7 +159,8 @@ Deno.serve(async (req: Request) => {
     const combinedText = pending ? `${pending}\n${rawText}` : rawText;
     log("interpreting", { phone, has_pending: !!pending, length: combinedText.length });
 
-    const result = await interpret(combinedText, todayISO());
+    const categories = await fetchHouseholdCategories(user.household_id);
+    const result = await interpret(combinedText, todayISO(), categories);
 
     if (result.intent === "undo") {
       const { message, action } = await undoLastExpense(user);
@@ -203,14 +213,31 @@ Deno.serve(async (req: Request) => {
       return new Response("ok", { status: 200 });
     }
 
-    if (result.intent === "expense" && result.erro) {
+    if (result.intent === "income" && result.incomePayload) {
+      const confirmation = await registerIncome(user, result.incomePayload);
+      await clearPendingContext(phone);
+      await sendText(phone, confirmation);
+      await logAudit({
+        message_id: messageId,
+        phone_number: phone,
+        direction: "inbound",
+        intent: "income",
+        action: "income_inserted",
+        success: true,
+        latency_ms: Date.now() - started,
+        raw_text: rawText,
+      });
+      return new Response("ok", { status: 200 });
+    }
+
+    if ((result.intent === "expense" || result.intent === "income") && result.erro) {
       await savePendingContext(phone, combinedText, result.erro);
       await sendText(phone, result.erro);
       await logAudit({
         message_id: messageId,
         phone_number: phone,
         direction: "inbound",
-        intent: "expense",
+        intent: result.intent,
         action: "context_saved",
         success: true,
         latency_ms: Date.now() - started,

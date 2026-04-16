@@ -1,10 +1,22 @@
 import { GEMINI_RESPONSE_SCHEMA, IMAGE_EXPENSE_SCHEMA } from "./schemas.ts";
-import { EXPENSE_SYSTEM_PROMPT, IMAGE_SYSTEM_PROMPT } from "./prompts.ts";
-import type { ExpenseExtraction, GeminiResult } from "./types.ts";
+import {
+  EXPENSE_SYSTEM_PROMPT,
+  IMAGE_SYSTEM_PROMPT,
+  renderBullets,
+} from "./prompts.ts";
+import type {
+  ExpenseExtraction,
+  GeminiResult,
+  HouseholdCategories,
+  IncomeExtraction,
+  Intent,
+  QueryExtraction,
+} from "./types.ts";
 import { log } from "./utils.ts";
 
 const MODEL = "gemini-2.5-flash";
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+const ENDPOINT =
+  `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const MAX_ATTEMPTS = 3;
 const BACKOFF_MS = [400, 1200];
@@ -21,21 +33,10 @@ interface GeminiRawResponse {
 }
 
 interface GeminiEnvelope {
-  intent: "expense" | "query" | "unknown" | "undo";
-  expense?: {
-    descricao: string;
-    valor: number;
-    categoria: "Habitação" | "Alimentação" | "Transporte" | "Lazer" | "Vestuário" | "Outros";
-    data: string;
-    status: "pago" | "pendente";
-  } | null;
-  query?: {
-    period: "today" | "week" | "month" | "custom";
-    category?: string;
-    user_name?: string;
-    custom_start?: string;
-    custom_end?: string;
-  } | null;
+  intent: Intent;
+  expense?: ExpenseExtraction | null;
+  income?: IncomeExtraction | null;
+  query?: QueryExtraction | null;
   erro?: string | null;
 }
 
@@ -56,7 +57,10 @@ interface CallGeminiResult<T> {
   latency_ms: number;
 }
 
-async function callGemini<T>(body: string, logPrefix: string): Promise<CallGeminiResult<T>> {
+async function callGemini<T>(
+  body: string,
+  logPrefix: string,
+): Promise<CallGeminiResult<T>> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY secret missing");
 
@@ -97,7 +101,10 @@ async function callGemini<T>(body: string, logPrefix: string): Promise<CallGemin
   const raw = (await res.json()) as GeminiRawResponse;
   const text = raw.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   if (!text) {
-    log(`${logPrefix}_empty_response`, { finishReason: raw.candidates?.[0]?.finishReason, latency_ms });
+    log(`${logPrefix}_empty_response`, {
+      finishReason: raw.candidates?.[0]?.finishReason,
+      latency_ms,
+    });
     throw new Error(`${logPrefix} returned no text`);
   }
 
@@ -105,15 +112,37 @@ async function callGemini<T>(body: string, logPrefix: string): Promise<CallGemin
   try {
     parsed = JSON.parse(text) as T;
   } catch (err) {
-    log(`${logPrefix}_parse_error`, { text: text.slice(0, 200), error: (err as Error).message });
+    log(`${logPrefix}_parse_error`, {
+      text: text.slice(0, 200),
+      error: (err as Error).message,
+    });
     throw new Error(`${logPrefix} returned invalid JSON`);
   }
 
   return { parsed, latency_ms };
 }
 
-export async function interpret(message: string, todayISO: string): Promise<GeminiResult> {
-  const systemPrompt = EXPENSE_SYSTEM_PROMPT.replaceAll("{{TODAY_ISO}}", todayISO);
+function renderPrompt(
+  template: string,
+  todayISO: string,
+  categories: HouseholdCategories,
+): string {
+  return template
+    .replaceAll("{{TODAY_ISO}}", todayISO)
+    .replaceAll("{{LISTA_CATEGORIAS_EXPENSE}}", renderBullets(categories.expense))
+    .replaceAll("{{LISTA_CATEGORIAS_INCOME}}", renderBullets(categories.income));
+}
+
+export async function interpret(
+  message: string,
+  todayISO: string,
+  categories: HouseholdCategories,
+): Promise<GeminiResult> {
+  const systemPrompt = renderPrompt(
+    EXPENSE_SYSTEM_PROMPT,
+    todayISO,
+    categories,
+  );
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [{ role: "user", parts: [{ text: message }] }],
@@ -124,13 +153,21 @@ export async function interpret(message: string, todayISO: string): Promise<Gemi
     },
   });
 
-  const { parsed: envelope, latency_ms } = await callGemini<GeminiEnvelope>(body, "gemini");
+  const { parsed: envelope, latency_ms } = await callGemini<GeminiEnvelope>(
+    body,
+    "gemini",
+  );
 
-  log("gemini_interpreted", { intent: envelope.intent, has_erro: !!envelope.erro, latency_ms });
+  log("gemini_interpreted", {
+    intent: envelope.intent,
+    has_erro: !!envelope.erro,
+    latency_ms,
+  });
 
   return {
     intent: envelope.intent,
     payload: envelope.expense ?? undefined,
+    incomePayload: envelope.income ?? undefined,
     queryPayload: envelope.query ?? undefined,
     erro: envelope.erro ?? undefined,
   };
@@ -141,8 +178,13 @@ export async function interpretImage(
   mimetype: string,
   caption: string,
   todayISO: string,
+  categories: HouseholdCategories,
 ): Promise<ImageGeminiResult> {
-  const systemPrompt = IMAGE_SYSTEM_PROMPT.replaceAll("{{TODAY_ISO}}", todayISO);
+  const systemPrompt = renderPrompt(
+    IMAGE_SYSTEM_PROMPT,
+    todayISO,
+    categories,
+  );
   const captionPart = caption.trim()
     ? `Legenda do usuário (delimitada): <<<${caption.trim()}>>>`
     : "Sem legenda do usuário.";
@@ -163,9 +205,15 @@ export async function interpretImage(
     },
   });
 
-  const { parsed: envelope, latency_ms } = await callGemini<ImageGeminiEnvelope>(body, "gemini_image");
+  const { parsed: envelope, latency_ms } = await callGemini<
+    ImageGeminiEnvelope
+  >(body, "gemini_image");
 
-  log("gemini_image_interpreted", { intent: envelope.intent, has_motivo: !!envelope.motivo, latency_ms });
+  log("gemini_image_interpreted", {
+    intent: envelope.intent,
+    has_motivo: !!envelope.motivo,
+    latency_ms,
+  });
 
   return {
     intent: envelope.intent,

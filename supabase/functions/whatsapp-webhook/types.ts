@@ -35,29 +35,50 @@ export interface WhatsappUser {
   active: boolean;
 }
 
-export type Intent = "expense" | "query" | "unknown" | "undo";
+export type Intent = "expense" | "income" | "query" | "unknown" | "undo";
 
 export interface ExpenseExtraction {
   descricao: string;
   valor: number;
-  categoria: "Habitação" | "Alimentação" | "Transporte" | "Lazer" | "Vestuário" | "Outros";
+  categoria: string;
   data: string;
   status: "pago" | "pendente";
 }
 
+export interface IncomeExtraction {
+  descricao: string;
+  valor: number;
+  categoria: string;
+  data: string;
+  status: "recebido" | "previsto";
+}
+
 export type QueryPeriod = "today" | "week" | "month" | "custom";
+export type QueryType =
+  | "balance"
+  | "category_report"
+  | "full_report"
+  | "goal_check";
 
 export interface QueryExtraction {
-  period: QueryPeriod;
+  tipo: QueryType;
+  period?: QueryPeriod;
   category?: string;
   user_name?: string;
   custom_start?: string;
   custom_end?: string;
 }
 
+export interface HouseholdCategories {
+  expense: string[];
+  income: string[];
+  both: string[];
+}
+
 export interface GeminiResult {
   intent: Intent;
   payload?: ExpenseExtraction;
+  incomePayload?: IncomeExtraction;
   queryPayload?: QueryExtraction;
   erro?: string;
 }

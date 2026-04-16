@@ -1,50 +1,47 @@
-import type { ExpenseExtraction, WhatsappUser } from "../types.ts";
+import type { IncomeExtraction, WhatsappUser } from "../types.ts";
 import { getServiceClient } from "../supabase-client.ts";
 import { resolveCategoryId } from "../categories.ts";
 import { formatBRL, log } from "../utils.ts";
-import { msgConfirmExpense } from "../messages.ts";
+import { msgConfirmIncome } from "../messages.ts";
 
-export async function registerExpense(
+export async function registerIncome(
   user: WhatsappUser,
-  payload: ExpenseExtraction,
+  payload: IncomeExtraction,
 ): Promise<string> {
   const supabase = getServiceClient();
 
   const categoryId = await resolveCategoryId(
     user.household_id,
     payload.categoria,
-    "expense",
+    "income",
   );
 
-  // expenses.category (text) mantido como legacy/fallback conforme SPEC DEFINITIVA §12.
-  // expenses.category_id é a referência canônica quando existe.
-  const { error } = await supabase.from("expenses").insert({
+  const { error } = await supabase.from("incomes").insert({
     user_id: user.user_id,
     household_id: user.household_id,
     name: payload.descricao,
     amount: payload.valor,
-    category: payload.categoria,
     category_id: categoryId,
-    due_date: payload.data,
+    received_date: payload.data,
     status: payload.status,
     added_by_name: `${user.display_name} (WhatsApp)`,
   });
 
   if (error) {
-    log("expense_insert_failed", {
+    log("income_insert_failed", {
       error: error.message,
       phone: user.phone_number,
     });
     throw error;
   }
 
-  log("expense_inserted", {
+  log("income_inserted", {
     phone: user.phone_number,
     amount: payload.valor,
     category_resolved: !!categoryId,
   });
 
-  return msgConfirmExpense(
+  return msgConfirmIncome(
     formatBRL(payload.valor),
     payload.categoria,
     payload.descricao,

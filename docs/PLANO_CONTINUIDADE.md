@@ -96,6 +96,37 @@ daily_spending · 7 linhas Abr/2026, categoria canônica via coalesce(c.name, e.
 
 ---
 
+## SPEC DEFINITIVA — Passo 2 (WhatsApp adaptado) ✅ CÓDIGO PRONTO · DEPLOY PENDENTE (2026-04-16)
+
+**Abordagem:** estender, não reescrever. O código da Edge Function `whatsapp-webhook` foi adaptado no repo, **sem deploy ainda** — o bot continua em produção com a versão v15 (Fase 4). Deploy fica pra quando Marcelo validar o diff e rodar `supabase functions deploy whatsapp-webhook` num momento controlado.
+
+**Arquivos alterados em `supabase/functions/whatsapp-webhook/`:**
+
+| Arquivo | Mudança |
+|---|---|
+| `types.ts` | `Intent` agora 5-valores (+ `income`). `ExpenseExtraction.categoria` e `IncomeExtraction.categoria` viram `string` livre. Adicionado `IncomeExtraction`, `HouseholdCategories`, `QueryType` (`balance` \| `category_report` \| `full_report` \| `goal_check`). `QueryExtraction.tipo` obrigatório, `period` agora opcional. `GeminiResult.incomePayload` novo. |
+| `categories.ts` **(novo)** | `fetchHouseholdCategories(householdId)` → `{expense, income, both}`. `resolveCategoryId(householdId, name, kind)` para inserts. Cache em memória por 60s dentro do mesmo cold start. |
+| `schemas.ts` | Removido `CATEGORIAS` enum fixo. Adicionado `INCOME_STATUS_ENUM`, `QUERY_TYPE_ENUM`, `EXPENSE_STATUS_ENUM` (alias `STATUS_ENUM` mantido pra não quebrar). `GEMINI_RESPONSE_SCHEMA` ganha bloco `income` e `query.tipo`. `IMAGE_EXPENSE_SCHEMA` agora aceita `categoria: string` livre. |
+| `prompts.ts` | Template com placeholders `{{LISTA_CATEGORIAS_EXPENSE}}` / `{{LISTA_CATEGORIAS_INCOME}}` / `{{TODAY_ISO}}`. Intents documentados: `expense`, `income`, `query` (4 subtipos), `undo`, `unknown`. Helper `renderBullets(names)` exportado. `IMAGE_SYSTEM_PROMPT` também ganha lista dinâmica. |
+| `gemini.ts` | `interpret(message, todayISO, categories)` e `interpretImage(base64, mimetype, caption, todayISO, categories)`. Função interna `renderPrompt` interpola placeholders. Envelope atualizado com `income` + `query.tipo`. |
+| `handlers/income.ts` **(novo)** | `registerIncome(user, payload)` resolve `category_id` via `resolveCategoryId` e insere em `public.incomes` com `status`, `received_date`, `added_by_name`. |
+| `handlers/expense.ts` | Agora resolve `category_id` e grava **ambos** (`category` text legacy + `category_id` canônico) na mesma insert. `log("expense_inserted")` ganha `category_resolved`. |
+| `handlers/query.ts` | Dispatcher por `query.tipo`: `balance` (view `monthly_summary`), `goal_check` (view `goal_progress`, filtro opcional por categoria), `full_report` (summary + top 3 metas em paralelo), `category_report` (mantém fluxo anterior). `period` opcional, default `month`. |
+| `handlers/image.ts` | Recebe `categories` do caller e repassa ao `interpretImage`. Validação de `categoria` relaxada para string não-vazia (lista passa no prompt, `registerExpense` resolve `category_id`). |
+| `messages.ts` | Novas funções: `msgConfirmIncome`, `msgBalance`, `msgGoalCheck`, `msgGoalCheckEmpty`, `msgFullReport`. Emojis de meta por faixa de %: 🔴 ≥100, ⚠️ ≥80, 🟡 ≥60, ✅ <60. |
+| `index.ts` | Imports de `registerIncome` e `fetchHouseholdCategories`. Busca `categories` antes de chamar `interpret`/`handleImage`. Novo branch `intent=income` (registra) + branch unificado de clarificação para `expense`/`income` (pergunta no WhatsApp, grava contexto). Audit `intent="income", action="income_inserted"`. |
+
+**Validação estática feita (sem deno CLI disponível no sistema):** grep confirmou que nenhum arquivo ainda referencia o símbolo removido `CATEGORIAS`; `interpret()` e `handleImage()` são chamados uma vez cada com as novas assinaturas; `q.period ?? "month"` trata o campo opcional.
+
+**O que ainda não foi feito (fica pro Marcelo):**
+1. `supabase functions deploy whatsapp-webhook` (alvo: v16).
+2. Teste E2E pelo WhatsApp nas 3 intents — em especial `income` ("recebi 5000 de salário hoje") e os 4 subtipos de `query` ("quanto sobra?", "tô estourando alimentação?", "resume o mês", "quanto gastei em transporte").
+3. Se algo quebrar em produção: rollback simples é fazer deploy da commit anterior (`e3d597b` ou `a347f66`).
+
+**Próximo passo da spec (Passo 3):** frontend — Configurações + CRUD de Categorias.
+
+---
+
 ## 0. Princípios do plano
 
 1. **Uma Edge Function, múltiplos intents.** A inspiração (N8N) separa "Registrar gastos" / "Consultas" / outros em workflows distintos. No Supabase Edge Function vamos unificar em **um único endpoint com um router de intent baseado em Gemini**, pra evitar múltiplos cold starts e simplificar o deploy. Modularidade vem dos arquivos internos, não de funções separadas.

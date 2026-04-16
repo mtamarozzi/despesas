@@ -6,6 +6,7 @@ import NewEntry from './pages/NewEntry';
 import Login from './pages/Login';
 import CalendarView from './pages/CalendarView';
 import Reports from './pages/Reports';
+import Settings from './pages/Settings';
 import './App.css';
 
 function App() {
@@ -264,6 +265,8 @@ function App() {
         return <NewEntry onSave={handleAddExpense} onCancel={() => setActiveTab('dashboard')} />;
       case 'reports':
         return <Reports expenses={expenses} onExport={handleExportCSV} />;
+      case 'settings':
+        return <Settings user={session?.user} household={household} />;
       default:
         return <Dashboard expenses={expenses} />;
     }

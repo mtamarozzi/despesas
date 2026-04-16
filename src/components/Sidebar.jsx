@@ -21,6 +21,7 @@ const Sidebar = ({ activeTab, setActiveTab, onExport, user, isOpen }) => {
     { id: 'calendar', label: 'Calendário', icon: Bell },
     { id: 'new-entry', label: 'Nova Despesa', icon: PlusCircle },
     { id: 'reports', label: 'Relatórios', icon: BarChart3 },
+    { id: 'settings', label: 'Ajustes', icon: Settings },
   ];
 
   return (

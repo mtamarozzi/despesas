@@ -132,6 +132,42 @@ daily_spending · 7 linhas Abr/2026, categoria canônica via coalesce(c.name, e.
 
 ---
 
+## SPEC DEFINITIVA — Passo 3 (Frontend: Configurações + CRUD Categorias) ✅ CONCLUÍDO (2026-04-16)
+
+**Entrega:** nova aba "Ajustes" no CasaFlow com tabs de Perfil e Categorias. Categorias totalmente CRUD (criar, editar, arquivar/reativar, excluir, cor, ícone, tipo, ordem).
+
+**Arquivos novos em `src/`:**
+
+| Arquivo | Função |
+|---|---|
+| `hooks/useCategories.js` | Hook stale-while-revalidate. Lista por household ordenada por `display_order`. Mutations: `create`, `update`, `remove`, `toggleActive`, `reload`. Atualiza estado local após cada mutation. |
+| `hooks/useProfile.js` | Hook equivalente pra `public.profiles`. `save()` sobrescreve `display_name`, `avatar_url`, `income_type`, `onboarding_completed`, `income_setup_skipped`. |
+| `pages/Settings.jsx` | Página com duas seções (state local `activeSection`): `ProfileSection` (form: display_name, email readonly, avatar_url, radio income_type monthly/weekly/daily) + `CategoriesSection` (filtros all/expense/income/both/active/inactive, toolbar com "Nova categoria", lista com ícone lucide livre, cor, tipo badge colorido, badge "arquivada", ações editar/arquivar/excluir, modal de edição com form completo). |
+| `pages/Settings.css` | Reusa tokens do tema (glass, radii, cores). Modal com backdrop blur. Responsivo (grid → 1 col em ≤640px). |
+
+**Arquivos alterados:**
+
+| Arquivo | Mudança |
+|---|---|
+| `components/Sidebar.jsx` | Item `{ id: 'settings', label: 'Ajustes', icon: Settings }` (ícone já estava importado mas não-usado). |
+| `components/Layout.jsx` | Importa `Settings` do lucide, adiciona item em `mobileMenuItems` (6 itens agora na bottom nav mobile). |
+| `App.jsx` | Import `Settings`. Case `'settings': return <Settings user={session?.user} household={household} />`. |
+
+**Padrões seguidos (React 19 strict lint):**
+- Hooks evitam `setState` síncrono dentro de `useEffect` — loading derivado do valor inicial do state (`null`/`undefined` = carregando).
+- `ProfileSection` sincroniza form com profile via set-state-during-render (pattern oficial React para derivar de props), não via effect.
+- Cancel pattern (`let cancelled = false; return () => { cancelled = true; }`) em todos os fetches.
+
+**Delete de categoria:** hard delete no banco (`on delete set null` nas FKs de `expenses.category_id` e `incomes.category_id` preserva linhas antigas). Confirmação via `window.confirm`.
+
+**Validação:** `npm run build` ✓ · `npx eslint` ✓ (código novo limpo; App.jsx pré-existente mantém 3 erros/warnings antigos, fora do escopo desse passo).
+
+**Deploy do frontend:** ainda não feito — Marcelo decide quando subir (provavelmente `npm run build` local + hospedar o `dist/` no lugar habitual do CasaFlow).
+
+**Próximo passo da spec (Passo 4):** frontend — tela de Receitas (espelho de Despesas para `public.incomes`).
+
+---
+
 ## 0. Princípios do plano
 
 1. **Uma Edge Function, múltiplos intents.** A inspiração (N8N) separa "Registrar gastos" / "Consultas" / outros em workflows distintos. No Supabase Edge Function vamos unificar em **um único endpoint com um router de intent baseado em Gemini**, pra evitar múltiplos cold starts e simplificar o deploy. Modularidade vem dos arquivos internos, não de funções separadas.

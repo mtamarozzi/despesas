@@ -1,9 +1,16 @@
 # Plano de Continuidade — CasaFlow + Assistente WhatsApp
 
-**Data:** 2026-04-15
+**Data:** 2026-04-15 (criado) · 2026-04-16 (última atualização)
 **Autor:** Claude + Marcelo
 **Baseado em:** `RELATORIO_CASAFLOW_WHATSAPP.md` + screenshots em `Inspira/`
 **Escopo:** do estado atual (Fase 0 concluída) até assistente completo (texto + voz + imagem + consultas + lembretes)
+
+**Status atual (2026-04-16):**
+- ✅ Fase 1 (MVP registrar despesa)
+- ✅ Fase 2 (robustez: undo, rate limit, audit, retry Gemini)
+- ✅ Fase 3 (consultas — intent query com período/categoria/usuário)
+- ✅ Fase 6 (lembretes automáticos T-3/T-1 via pg_cron 9h BRT)
+- ⏳ Fases 4 (OCR), 5 (voz), 7 (metas/frontend), 8 (subcategorias) — pendentes
 
 ---
 
@@ -159,9 +166,11 @@ ORDER BY ts DESC;
 
 ---
 
-### Fase 3 — Consultas (intent `query`)
+### Fase 3 — Consultas (intent `query`) ✅ CONCLUÍDA (2026-04-16)
 
-**Objetivo:** inspiração tela 1 — "Quanto foi gasto na categoria saúde?"
+**Entregue:** single-shot Gemini classifica + extrai `{period, category?, user_name?, custom_start?, custom_end?}`. Handler `handlers/query.ts` resolve janelas today/week/month/custom em Deno, filtra por categoria e por usuário (fuzzy match em `whatsapp_users.display_name`). Resposta pt-BR com total, top 3 gastos e agregação por categoria. Deploy v12. Plano: `docs/superpowers/plans/2026-04-16-phase3-queries.md`.
+
+**Objetivo original:** inspiração tela 1 — "Quanto foi gasto na categoria saúde?"
 
 **Entregáveis:**
 
@@ -218,9 +227,11 @@ ORDER BY ts DESC;
 
 ---
 
-### Fase 6 — Lembretes automáticos (outbound)
+### Fase 6 — Lembretes automáticos (outbound) ✅ CONCLUÍDA (2026-04-16)
 
-**Objetivo:** bot avisa antes de vencimento.
+**Entregue:** Edge Function `whatsapp-reminders` separada (bearer auth via `REMINDERS_CRON_TOKEN`). pg_cron `0 12 * * *` UTC = 9h BRT (`jobid=4`, `active=true`). Janelas T-3 e T-1 em vez de única (decisão D2 override). Template pt-BR fixo em vez de Gemini (decisão D1 override — eliminou 1-2s latência + ponto de falha 503). Coluna `expenses.last_reminded_at` + index parcial. Validado: 3 msgs enviadas, idempotência confirmada. Plano: `docs/superpowers/plans/2026-04-16-phase6-reminders.md`.
+
+**Objetivo original:** bot avisa antes de vencimento.
 
 **Entregáveis:**
 

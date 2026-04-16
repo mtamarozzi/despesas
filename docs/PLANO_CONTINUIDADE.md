@@ -10,8 +10,36 @@
 - ✅ Fase 2 (robustez: undo, rate limit, audit, retry Gemini)
 - ✅ Fase 3 (consultas — intent query com período/categoria/usuário)
 - ✅ Fase 4 (OCR cupom + Pix via Gemini multimodal)
+- 📝 Fase 5 (mensagens de voz) — **design + plano prontos, execução pausada** em 2026-04-16 após identificação do gap de Receitas. Retomável a qualquer momento. Spec: `docs/superpowers/specs/2026-04-16-phase5-audio-messages-design.md`. Plano: `docs/superpowers/plans/2026-04-16-phase5-audio-messages.md` (commit `3e12189`).
 - ✅ Fase 6 (lembretes automáticos T-3/T-1 via pg_cron 9h BRT)
-- ⏳ Fases 5 (voz), 7 (metas/frontend), 8 (subcategorias) — pendentes
+- 🆕 **Fase de Receitas/Entradas (prioridade alta)** — ver seção "Pendência crítica" abaixo.
+- ⏳ Fases 7 (metas/frontend), 8 (subcategorias) — pendentes (metas depende de Receitas)
+
+---
+
+## Pendência crítica — Módulo de Receitas (Entradas)
+
+**Identificada em 2026-04-16 pelo Marcelo.**
+
+O projeto inteiro (nome do diretório "Despesas", tabela `expenses`, todos os intents do WhatsApp, dashboard CasaFlow, Fases 1–6) foi construído modelando apenas **saídas**. Um controle financeiro doméstico sem tracking de **entradas** (salário, freelas, 13º, transferências recebidas, rendimentos, vendas pontuais) é incompleto por desenho — metas só fazem sentido contra receita conhecida, e o usuário não consegue responder "sobrou quanto esse mês?" sem o lado positivo do razão.
+
+**Não foi levantado antes na brainstorming inicial nem em nenhuma das 4 fases subsequentes.** É uma falha de revisão que impacta a arquitetura a partir daqui: Fase 7 (metas) especificamente precisa de receita conhecida antes de ser útil.
+
+**Escopo a brainstormar (quando retomar):**
+- Schema: nova tabela `income` OU transações polimórficas `transactions(type: "expense" | "income", ...)` OU colunar na própria `expenses` com sinal (negativo/positivo). Decisão de brainstorming.
+- Categorias de receita: salário, freela, 13º, bônus, rendimento, outros. Separadas das categorias de despesa.
+- Novo intent WhatsApp `income`: "recebi 5000 de salário hoje", "caiu 200 de freela".
+- OCR de comprovante de crédito/depósito? (reuso da infra da Fase 4 multimodal).
+- Áudio de receita? (reuso da Fase 5 quando retomada).
+- Dashboard: card "Saldo do mês" = Σreceitas − Σdespesas, gráfico barras positivas/negativas, evolução histórica.
+- Lembretes: bot pode lembrar "entrou salário hoje?" se usuário marcar data recorrente (fora de escopo inicial).
+
+**Ordem sugerida de retomada:**
+1. Brainstorming Receitas (spec + plano)
+2. Implementação Receitas (schema, intents, dashboard)
+3. Retomar Fase 5 (voz) com intent `income` de graça
+4. Fase 7 (metas) sobre base completa
+5. Fase 8 (subcategorias)
 
 ---
 

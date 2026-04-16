@@ -9,8 +9,9 @@
 - ✅ Fase 1 (MVP registrar despesa)
 - ✅ Fase 2 (robustez: undo, rate limit, audit, retry Gemini)
 - ✅ Fase 3 (consultas — intent query com período/categoria/usuário)
+- ✅ Fase 4 (OCR cupom + Pix via Gemini multimodal)
 - ✅ Fase 6 (lembretes automáticos T-3/T-1 via pg_cron 9h BRT)
-- ⏳ Fases 4 (OCR), 5 (voz), 7 (metas/frontend), 8 (subcategorias) — pendentes
+- ⏳ Fases 5 (voz), 7 (metas/frontend), 8 (subcategorias) — pendentes
 
 ---
 
@@ -190,9 +191,15 @@ ORDER BY ts DESC;
 
 ---
 
-### Fase 4 — OCR de cupom fiscal (intent `image`)
+### Fase 4 — OCR de cupom fiscal (intent `image`) ✅ CONCLUÍDA (2026-04-16)
 
-**Objetivo:** inspiração tela 2 — usuário tira foto da notinha, bot identifica itens.
+**Entregue:** branch `imageMessage` no `index.ts` direciona para `handlers/image.ts`, que orquestra `evolution.getMediaBase64` → `gemini.interpretImage` (multimodal com `inlineData`) → `registerExpense` reaproveitado. Schema `IMAGE_EXPENSE_SCHEMA` reusa `ExpenseExtraction` direto (sem colunas novas). Caption entra como contexto extra delimitado (`<<<...>>>`) na mesma chamada Gemini (Q3/B). Sem confirmação (Q1/B), sem storage (Q5/A), 1 despesa = total agregado (Q4/A). Escopo: cupom fiscal + comprovante Pix/TED (Q2/C).
+
+**Validado em E2E (v15, verify_jwt=false):** 3/3 cupons + 1/1 Pix inseridos com valor, categoria, data corretos; 1/1 selfie devolvida como `image_unsupported` sem insert. Latência p50 ~7.5s (download + Gemini multimodal + insert). Plano: `docs/superpowers/plans/2026-04-16-phase4-image-ocr.md`. Spec: `docs/superpowers/specs/2026-04-16-phase4-image-ocr-design.md`.
+
+**Incidente/aprendizado:** deploy inicial (v14) regrediu `verify_jwt` para `true` (default do CLI Supabase), o que bloqueou Evolution no platform level antes do nosso código. Corrigido com `[functions.whatsapp-webhook] verify_jwt = false` no `config.toml` + redeploy como v15. Agora persistido.
+
+**Objetivo original:** inspiração tela 2 — usuário tira foto da notinha, bot identifica itens.
 
 **Entregáveis:**
 

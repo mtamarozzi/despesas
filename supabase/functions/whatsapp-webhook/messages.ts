@@ -65,3 +65,59 @@ export function msgUndoNothing(): string {
     "Sem nada novo pra remover — /desfazer só vale nos 10min após registrar.",
   ]);
 }
+
+export interface QueryResultData {
+  total: string;
+  count: number;
+  period: { start: string; end: string };
+  top3Items: Array<{ name: string; amount: string }>;
+  topCategories: Array<{ category: string; amount: string }>;
+  userName: string | null;
+  categoryFilter: string | null;
+}
+
+function formatPeriod(start: string, end: string): string {
+  const fmt = (d: string) => {
+    const [, m, day] = d.split("-");
+    return `${day}/${m}`;
+  };
+  if (start === end) return fmt(start);
+  return `${fmt(start)} a ${fmt(end)}`;
+}
+
+export function msgQueryResult(data: QueryResultData): string {
+  const who = data.userName ? ` (${data.userName})` : "";
+  const cat = data.categoryFilter ? ` em ${data.categoryFilter}` : "";
+  const period = formatPeriod(data.period.start, data.period.end);
+
+  let msg = `📊 ${data.total}${cat}${who} — ${period}\n`;
+  msg += `${data.count} despesa${data.count > 1 ? "s" : ""}\n\n`;
+
+  if (!data.categoryFilter && data.topCategories.length > 0) {
+    msg += "Por categoria:\n";
+    for (const c of data.topCategories) {
+      msg += `• ${c.category}: ${c.amount}\n`;
+    }
+    msg += "\n";
+  }
+
+  msg += "Maiores:\n";
+  for (const item of data.top3Items) {
+    msg += `• ${item.name}: ${item.amount}\n`;
+  }
+
+  return msg.trim();
+}
+
+export function msgQueryEmpty(
+  userName: string | null,
+  start: string,
+  end: string,
+): string {
+  const who = userName ? ` de ${userName}` : "";
+  const period = formatPeriod(start, end);
+  return pick([
+    `Nenhuma despesa${who} encontrada em ${period} 🤷`,
+    `Não achei nada${who} nesse período (${period}).`,
+  ]);
+}

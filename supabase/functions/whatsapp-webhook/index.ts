@@ -3,6 +3,7 @@ import { getServiceClient } from "./supabase-client.ts";
 import { sendText } from "./evolution.ts";
 import { interpret } from "./gemini.ts";
 import { registerExpense } from "./handlers/expense.ts";
+import { handleQuery } from "./handlers/query.ts";
 import { undoLastExpense } from "./handlers/undo.ts";
 import {
   clearPendingContext,
@@ -140,6 +141,23 @@ Deno.serve(async (req: Request) => {
         direction: "inbound",
         intent: "undo",
         action,
+        success: true,
+        latency_ms: Date.now() - started,
+        raw_text: rawText,
+      });
+      return new Response("ok", { status: 200 });
+    }
+
+    if (result.intent === "query" && result.queryPayload) {
+      const response = await handleQuery(user, result.queryPayload, todayISO());
+      await clearPendingContext(phone);
+      await sendText(phone, response);
+      await logAudit({
+        message_id: messageId,
+        phone_number: phone,
+        direction: "inbound",
+        intent: "query",
+        action: "query_answered",
         success: true,
         latency_ms: Date.now() - started,
         raw_text: rawText,

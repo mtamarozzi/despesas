@@ -35,7 +35,7 @@ export interface WhatsappUser {
   active: boolean;
 }
 
-export type Intent = "expense" | "unknown" | "undo";
+export type Intent = "expense" | "query" | "unknown" | "undo";
 
 export interface ExpenseExtraction {
   descricao: string;
@@ -45,8 +45,19 @@ export interface ExpenseExtraction {
   status: "pago" | "pendente";
 }
 
+export type QueryPeriod = "today" | "week" | "month" | "custom";
+
+export interface QueryExtraction {
+  period: QueryPeriod;
+  category?: string;
+  user_name?: string;
+  custom_start?: string;
+  custom_end?: string;
+}
+
 export interface GeminiResult {
   intent: Intent;
   payload?: ExpenseExtraction;
+  queryPayload?: QueryExtraction;
   erro?: string;
 }

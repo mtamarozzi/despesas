@@ -7,10 +7,16 @@ Data de referência ("hoje"): {{TODAY_ISO}}. Use para resolver "hoje", "ontem", 
 Intent:
 - expense: mensagem relata despesa concreta (tem valor e produto/serviço). Ex: "paguei 120 de luz hoje", "gastei 55 no mercado".
 - undo: usuário quer desfazer/apagar a ÚLTIMA despesa registrada. Ex: "desfazer", "apaga último", "cancela", "desfaz", "errei, apaga", "pode apagar", "anula".
-- unknown: outras coisas (saudação, pergunta, conversa fiada). Ex: "oi", "quanto gastei?".
+- query: usuário pergunta sobre gastos, totais, resumos. Ex: "quanto gastei esse mês?", "quanto foi gasto em alimentação na semana", "resume abril pra mim", "quanto a Rossana gastou hoje".
+- unknown: outras coisas que NÃO são despesa, desfazer nem consulta (saudação, conversa fiada). Ex: "oi", "obrigado".
 
 Se intent=undo: expense=null e erro=null.
 Se intent=unknown: expense=null e erro=null.
+Se intent=query: preencha query com os filtros detectados. expense=null e erro=null.
+  - period: "today" (hoje), "week" (esta semana, seg-dom), "month" (este mês), "custom" (datas específicas como "em abril", "semana passada").
+  - category: nome EXATO da categoria se mencionada, senão omitir.
+  - user_name: nome da pessoa se mencionada ("Rossana", "Marcelo"), senão omitir.
+  - custom_start/custom_end: ISO YYYY-MM-DD, só quando period="custom". "abril" → custom_start="2026-04-01", custom_end="2026-04-30". "semana passada" → calcular seg-dom da semana anterior.
 
 Se intent=expense e há dados: preencha expense com TODOS os campos.
 Se intent=expense mas falta dado: expense=null e erro=pergunta curta em pt-BR.

@@ -76,7 +76,8 @@ O router atual decide entre `expense | query | undo | unknown` para texto. Quand
 | Arquivo | Responsabilidade |
 |---|---|
 | `supabase/functions/whatsapp-webhook/handlers/image.ts` | `handleImage(user, eventData, today)`: orquestra download → Gemini → registerExpense ou erro. Retorna `{message, action, success}` para o `index.ts` enviar e auditar. |
-| `supabase/functions/whatsapp-webhook/prompts/image.md` | Prompt pt-BR do Gemini multimodal. Define regras de prioridade caption × imagem, distingue cupom de comprovante de transferência, instrui retorno `unsupported` para imagens fora do escopo. |
+
+Prompt do Gemini multimodal é adicionado a `prompts.ts` como nova constante `IMAGE_SYSTEM_PROMPT` (segue padrão do `EXPENSE_SYSTEM_PROMPT` atual).
 
 ### 4.2 Modificados (cirúrgico)
 
@@ -87,7 +88,8 @@ O router atual decide entre `expense | query | undo | unknown` para texto. Quand
 | `evolution.ts` | Adicionar `getMediaBase64(messageId, instance)`: POST em `/chat/getBase64FromMediaMessage/<instance>` com `{message: {key: {id}}}`. Retorna `{base64, mimetype}`. Throw em 4xx/5xx (capturado por `handleImage`). |
 | `schemas.ts` | Novo `IMAGE_EXPENSE_SCHEMA` (ver §5). Reusa o mesmo enum de categorias do schema de texto. |
 | `messages.ts` | `msgImageUnsupported(motivo?: string)` e `msgImageDownloadError()`. |
-| `types.ts` | Adicionar `ImageMessageData` ao union de `EvolutionMessage` (campo `imageMessage: {caption?, mimetype, ...}`). Tornar `messageType` parte do tipo discriminado. |
+| `types.ts` | Sem mudança: `EvolutionMessageContent` já contém `imageMessage: {mimetype?, caption?}`. |
+| `prompts.ts` | Adicionar `IMAGE_SYSTEM_PROMPT` (string export, mesmo padrão do `EXPENSE_SYSTEM_PROMPT`). |
 
 ### 4.3 Não muda
 
@@ -111,23 +113,24 @@ O router atual decide entre `expense | query | undo | unknown` para texto. Quand
   properties: {
     intent: { type: "STRING", enum: ["expense", "unsupported"] },
     payload: {
-      type: "OBJECT",
+      type: "object",
+      nullable: true,
       properties: {
-        valor:      { type: "NUMBER" },                       // obrigatório se intent=expense
-        data:       { type: "STRING" },                       // ISO YYYY-MM-DD
-        descricao:  { type: "STRING" },                       // "Supermercado Extra" / "Pix p/ João"
-        categoria:  { type: "STRING", enum: [...categorias atuais do expense schema] },
-        pago_por:   { type: "STRING", nullable: true },       // só preenchido se vier da caption
-        metodo:     { type: "STRING", nullable: true },       // "pix" | "credito" | "debito" | "dinheiro" | "transferencia"
-        observacao: { type: "STRING", nullable: true }        // qualquer info extra da caption
-      }
+        descricao: { type: "string" },                          // ex.: "supermercado extra", "pix joão"
+        valor:     { type: "number" },                          // > 0
+        categoria: { type: "string", enum: [...CATEGORIAS] },   // mesmo enum do schema de texto
+        data:      { type: "string" },                          // ISO YYYY-MM-DD
+        status:    { type: "string", enum: [...STATUS_ENUM] }   // "pago" para cupom/Pix; caption pode forçar "pendente"
+      },
+      required: ["descricao", "valor", "categoria", "data", "status"]
     },
-    motivo: { type: "STRING", nullable: true }                // só preenchido se intent=unsupported
-  }
+    motivo: { type: "string", nullable: true }                  // só preenchido se intent=unsupported
+  },
+  required: ["intent"]
 }
 ```
 
-**Reuso de taxonomia:** `categoria` puxa o mesmo enum que o schema de texto usa em `schemas.ts`. Zero divergência.
+**Reuso direto de `ExpenseExtraction`:** o `payload` é exatamente a forma que `registerExpense` já consome — zero adapter. Caption do usuário pode influenciar `data`, `status` (e indiretamente `descricao`/`categoria`) via prompt; não há colunas para `pago_por`/`metodo`/`observacao` na tabela `expenses` hoje, então não fazem parte do schema (YAGNI).
 
 ### 5.2 Prompt (`prompts/image.md`)
 

@@ -96,9 +96,17 @@ daily_spending · 7 linhas Abr/2026, categoria canônica via coalesce(c.name, e.
 
 ---
 
-## SPEC DEFINITIVA — Passo 2 (WhatsApp adaptado) ✅ CÓDIGO PRONTO · DEPLOY PENDENTE (2026-04-16)
+## SPEC DEFINITIVA — Passo 2 (WhatsApp adaptado) ✅ CONCLUÍDO (2026-04-16)
 
-**Abordagem:** estender, não reescrever. O código da Edge Function `whatsapp-webhook` foi adaptado no repo, **sem deploy ainda** — o bot continua em produção com a versão v15 (Fase 4). Deploy fica pra quando Marcelo validar o diff e rodar `supabase functions deploy whatsapp-webhook` num momento controlado.
+**Abordagem:** estender, não reescrever. Código da Edge Function `whatsapp-webhook` adaptado no repo + deploy feito pelo Marcelo + validação E2E real via WhatsApp.
+
+**Validação E2E (audit log, janela de 6h após deploy):** todos os fluxos exercitados com sucesso —
+- `income_inserted` × 1 (intent NOVA — ex: "recebi 5000 de salário") · avg 6.0s
+- `query_answered` × 3 (balance / goal_check / full_report / category_report via views) · avg 4.7s
+- `expense_inserted` × 2 (fluxo legacy continua) · avg 4.9s
+- `image_expense_inserted` × 1 (OCR cupom/Pix intacto) · avg 4.7s
+- `context_saved` × 1 (clarificação) · `unknown_intent` × 1 · `non_text` × 2
+- Nenhuma falha. Latência p50 ≈ 4-6s (Gemini Flash + round-trip Supabase), dentro do esperado.
 
 **Arquivos alterados em `supabase/functions/whatsapp-webhook/`:**
 
@@ -118,10 +126,7 @@ daily_spending · 7 linhas Abr/2026, categoria canônica via coalesce(c.name, e.
 
 **Validação estática feita (sem deno CLI disponível no sistema):** grep confirmou que nenhum arquivo ainda referencia o símbolo removido `CATEGORIAS`; `interpret()` e `handleImage()` são chamados uma vez cada com as novas assinaturas; `q.period ?? "month"` trata o campo opcional.
 
-**O que ainda não foi feito (fica pro Marcelo):**
-1. `supabase functions deploy whatsapp-webhook` (alvo: v16).
-2. Teste E2E pelo WhatsApp nas 3 intents — em especial `income` ("recebi 5000 de salário hoje") e os 4 subtipos de `query` ("quanto sobra?", "tô estourando alimentação?", "resume o mês", "quanto gastei em transporte").
-3. Se algo quebrar em produção: rollback simples é fazer deploy da commit anterior (`e3d597b` ou `a347f66`).
+**Deploy e teste concluídos pelo Marcelo (2026-04-16):** v16 no ar, todos os intents respondendo.
 
 **Próximo passo da spec (Passo 3):** frontend — Configurações + CRUD de Categorias.
 

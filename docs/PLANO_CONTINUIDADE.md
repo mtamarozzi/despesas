@@ -1,6 +1,6 @@
 # Plano de Continuidade — CasaFlow + Assistente WhatsApp
 
-**Data:** 2026-04-15 (criado) · 2026-04-16 (última atualização)
+**Data:** 2026-04-15 (criado) · 2026-04-16 (última atualização: SPEC DEFINITIVA Passo 1 concluído)
 **Autor:** Claude + Marcelo
 **Baseado em:** `RELATORIO_CASAFLOW_WHATSAPP.md` + screenshots em `Inspira/`
 **Escopo:** do estado atual (Fase 0 concluída) até assistente completo (texto + voz + imagem + consultas + lembretes)
@@ -12,8 +12,8 @@
 - ✅ Fase 4 (OCR cupom + Pix via Gemini multimodal)
 - 📝 Fase 5 (mensagens de voz) — **design + plano prontos, execução pausada** em 2026-04-16 após identificação do gap de Receitas. Retomável a qualquer momento. Spec: `docs/superpowers/specs/2026-04-16-phase5-audio-messages-design.md`. Plano: `docs/superpowers/plans/2026-04-16-phase5-audio-messages.md` (commit `3e12189`).
 - ✅ Fase 6 (lembretes automáticos T-3/T-1 via pg_cron 9h BRT)
-- 🆕 **Fase de Receitas/Entradas (prioridade alta)** — ver seção "Pendência crítica" abaixo.
-- ⏳ Fases 7 (metas/frontend), 8 (subcategorias) — pendentes (metas depende de Receitas)
+- 🏗️ **SPEC DEFINITIVA CasaFlow em execução** — spec unificada em `docs/SPEC_DEFINITIVA_CASAFLOW.md` (anexada fora do repo, em `C:\Users\User\Documents\Despesas\docs\`) substitui o escopo isolado de Receitas e absorve Fase 7 (metas). Entrega: categorias dinâmicas + receitas + metas + recorrências + dashboard reformulado + onboarding + adaptação WhatsApp. Ordem: Passo 1 migrations → Passo 2 WhatsApp → Passos 3–8 frontend. **Passo 1 concluído em 2026-04-16 — ver seção "SPEC DEFINITIVA — Passo 1" abaixo.**
+- ⏳ Fase 8 (subcategorias) — pendente (reavaliar após SPEC DEFINITIVA concluída; categorias dinâmicas podem ter tornado obsoleto).
 
 ---
 
@@ -40,6 +40,59 @@ O projeto inteiro (nome do diretório "Despesas", tabela `expenses`, todos os in
 3. Retomar Fase 5 (voz) com intent `income` de graça
 4. Fase 7 (metas) sobre base completa
 5. Fase 8 (subcategorias)
+
+**Resolução (2026-04-16):** a brainstorming gerou a `SPEC_DEFINITIVA_CASAFLOW.md` — uma spec única que cobre Receitas + Metas + Categorias dinâmicas + Recorrências + Onboarding + Dashboard + adaptação WhatsApp, com ordem de implementação explícita. A execução dessa spec substitui os itens 1–4 acima.
+
+---
+
+## SPEC DEFINITIVA — Passo 1 (Migrations) ✅ CONCLUÍDO (2026-04-16)
+
+**Arquivo fonte da spec:** `C:\Users\User\Documents\Despesas\docs\SPEC_DEFINITIVA_CASAFLOW.md` (fora do repo — anexado ao Claude Code pelo Marcelo).
+**Prompt de continuidade:** `C:\Users\User\Documents\Despesas\docs\PROMPT_DEFINITIVO_CLAUDE_CODE.md`.
+
+**Migrations aplicadas no projeto Supabase `jeyllykzwtixfzeybkkl`**, uma por vez via `apply_migration` (MCP):
+
+| # | Migration name | O que faz |
+|---|---|---|
+| 1 | `create_categories_table` | Tabela `categories` (id, household_id, name, icon, color, display_order, type in ('expense','income','both'), active, timestamps). Unique(household_id, name). RLS on. |
+| 2 | `create_incomes_table` | Tabela `incomes` (household_id, user_id, name, amount, category_id, received_date, status in ('recebido','previsto'), notes, added_by_name, recurrence_id, timestamps). RLS on. |
+| 3 | `create_goals_table` | Tabela `goals` (household_id, category_id, month_year, limit_amount, created_by, timestamps). Unique(household_id, category_id, month_year). RLS on. |
+| 4 | `create_recurrences_table` | Tabela `recurrences` (type in ('income','expense'), frequency in ('daily','weekly','biweekly','monthly','yearly'), day_of_month/week, month_of_year, starts_at, ends_at, last_generated, active). RLS on. |
+| 5 | `alter_expenses_add_category_and_recurrence` | `expenses.category_id` + `expenses.recurrence_id` como FKs. **`expenses.category` (text) preservado** como fallback/legacy conforme regra da spec §12. |
+| 6 | `alter_incomes_fk_recurrence_id` | Adiciona FK `incomes.recurrence_id` → `recurrences(id)` on delete set null. |
+| 7 | `alter_profiles_onboarding_fields` | `profiles.display_name`, `avatar_url`, `income_type` (monthly/weekly/daily), `onboarding_completed`, `income_setup_skipped`. |
+| 8 | `create_financial_views` | Views `monthly_summary` (received/projected/total income+expense, real_balance, projected_balance com full outer join), `goal_progress` (limit/spent/remaining/percent_used por meta), `daily_spending` (agrupada por dia × categoria, usa `coalesce(c.name, e.category)`). |
+| 9 | `rls_policies_financial_tables` | 8 policies (select + all) para `categories`, `incomes`, `goals`, `recurrences` filtradas por `household_members.user_id = auth.uid()`. |
+| 10 | `triggers_updated_at_financial_tables` | Triggers `before update ... for each row execute public.set_updated_at()` nas 4 novas tabelas. Reusa função já existente no projeto. |
+| 11 | `seed_categories_household_casa` | 16 categorias seed no household `f5a5bd3f-9fbf-4d78-9b18-8d51b998b35e` (10 expense: Moradia, Alimentação, Refeições fora, Transporte, Saúde, Educação, Lazer, Vestuário, Assinaturas, Outros (despesa); 6 income: Salário, Freelance, Aluguel Recebido, Investimentos, Benefício, Outros (receita)). `on conflict do nothing`. |
+| 12 | `backfill_expenses_category_id` | Backfill das 14 despesas reais existentes → `category_id`. Mapeamento: Habitação → Moradia, Outros → Outros (despesa); Alimentação/Transporte idem. 100% das linhas migradas, `category` text mantido. |
+| 13a | `seed_test_incomes` | Receitas de teste da spec §10: Salário Marcelo 5.000 (2026-04-05), Freelance 800 (2026-04-10), Salário Rossana 3.000 (2026-04-05). Total R$ 8.800. |
+| 13b | `seed_test_goals_and_recurrences` | 8 metas para abril/2026 (Moradia 3.500, Alimentação 3.000, Refeições fora 500, Transporte 800, Saúde 1.000, Educação 1.500, Lazer 500, Assinaturas 300) + 4 recorrências (Salário Marcelo, Salário Rossana, Aluguel, Netflix). |
+
+**Desvio documentado da spec §10:** as 6 despesas de teste (Aluguel, Mercado, Conta de Luz, Netflix, Restaurante, Consulta médica) **não foram inseridas** — o household já tem 14 despesas reais e a duplicação estragaria os totais do Marcelo. Se quiser inserir mesmo assim, basta pedir.
+
+**Views validadas (2026-04-16)** contra dados reais + seeds:
+
+```
+monthly_summary · household Casa · 2026-04-01
+  received_income R$ 8.800,00
+  total_income    R$ 8.800,00
+  paid_expenses   R$   590,69
+  pending         R$ 1.750,40
+  total_expenses  R$ 2.341,09
+  real_balance    R$ 8.209,31
+  projected_balance R$ 6.458,91
+
+goal_progress · Moradia 54,8% · Alimentação 3,5% · Transporte 8,6% · demais 0%
+
+daily_spending · 7 linhas Abr/2026, categoria canônica via coalesce(c.name, e.category)
+```
+
+**Próximos passos (Passo 2 da spec):** adaptar a Edge Function `whatsapp-webhook` existente para:
+- Buscar categorias dinamicamente do banco (sem enum fixo no responseSchema do Gemini)
+- Suportar 3 intents: `expense` | `income` | `query`
+- Novo handler `income.ts`, adaptar `query.ts` para `goal_check`/`balance`/`category_report`/`full_report`
+- **Não reescrever do zero** — estender o código atual (handlers/, prompts/, schemas).
 
 ---
 

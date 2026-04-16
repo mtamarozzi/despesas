@@ -51,20 +51,14 @@ export interface ImageGeminiResult {
   motivo?: string;
 }
 
-export async function interpret(message: string, todayISO: string): Promise<GeminiResult> {
+interface CallGeminiResult<T> {
+  parsed: T;
+  latency_ms: number;
+}
+
+async function callGemini<T>(body: string, logPrefix: string): Promise<CallGeminiResult<T>> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY secret missing");
-
-  const systemPrompt = EXPENSE_SYSTEM_PROMPT.replaceAll("{{TODAY_ISO}}", todayISO);
-  const body = JSON.stringify({
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    contents: [{ role: "user", parts: [{ text: message }] }],
-    generationConfig: {
-      temperature: 0.2,
-      responseMimeType: "application/json",
-      responseSchema: GEMINI_RESPONSE_SCHEMA,
-    },
-  });
 
   const started = Date.now();
   let res: Response | undefined;
@@ -80,7 +74,7 @@ export async function interpret(message: string, todayISO: string): Promise<Gemi
     if (res.ok) break;
 
     const errBody = await res.text();
-    log("gemini_http_error", {
+    log(`${logPrefix}_http_error`, {
       status: res.status,
       body: errBody.slice(0, 400),
       attempt,
@@ -88,7 +82,7 @@ export async function interpret(message: string, todayISO: string): Promise<Gemi
     });
 
     if (!RETRIABLE_STATUS.has(res.status) || attempt === MAX_ATTEMPTS) {
-      throw new Error(`Gemini HTTP ${res.status}`);
+      throw new Error(`${logPrefix} HTTP ${res.status}`);
     }
 
     await sleep(BACKOFF_MS[attempt - 1]);
@@ -97,23 +91,40 @@ export async function interpret(message: string, todayISO: string): Promise<Gemi
   const latency_ms = Date.now() - started;
 
   if (!res || !res.ok) {
-    throw new Error("Gemini HTTP failure after retries");
+    throw new Error(`${logPrefix} HTTP failure after retries`);
   }
 
   const raw = (await res.json()) as GeminiRawResponse;
   const text = raw.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   if (!text) {
-    log("gemini_empty_response", { finishReason: raw.candidates?.[0]?.finishReason, latency_ms });
-    throw new Error("Gemini returned no text");
+    log(`${logPrefix}_empty_response`, { finishReason: raw.candidates?.[0]?.finishReason, latency_ms });
+    throw new Error(`${logPrefix} returned no text`);
   }
 
-  let envelope: GeminiEnvelope;
+  let parsed: T;
   try {
-    envelope = JSON.parse(text) as GeminiEnvelope;
+    parsed = JSON.parse(text) as T;
   } catch (err) {
-    log("gemini_parse_error", { text: text.slice(0, 200), error: (err as Error).message });
-    throw new Error("Gemini returned invalid JSON");
+    log(`${logPrefix}_parse_error`, { text: text.slice(0, 200), error: (err as Error).message });
+    throw new Error(`${logPrefix} returned invalid JSON`);
   }
+
+  return { parsed, latency_ms };
+}
+
+export async function interpret(message: string, todayISO: string): Promise<GeminiResult> {
+  const systemPrompt = EXPENSE_SYSTEM_PROMPT.replaceAll("{{TODAY_ISO}}", todayISO);
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ role: "user", parts: [{ text: message }] }],
+    generationConfig: {
+      temperature: 0.2,
+      responseMimeType: "application/json",
+      responseSchema: GEMINI_RESPONSE_SCHEMA,
+    },
+  });
+
+  const { parsed: envelope, latency_ms } = await callGemini<GeminiEnvelope>(body, "gemini");
 
   log("gemini_interpreted", { intent: envelope.intent, has_erro: !!envelope.erro, latency_ms });
 
@@ -131,9 +142,6 @@ export async function interpretImage(
   caption: string,
   todayISO: string,
 ): Promise<ImageGeminiResult> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!apiKey) throw new Error("GEMINI_API_KEY secret missing");
-
   const systemPrompt = IMAGE_SYSTEM_PROMPT.replaceAll("{{TODAY_ISO}}", todayISO);
   const captionPart = caption.trim()
     ? `Legenda do usuário (delimitada): <<<${caption.trim()}>>>`
@@ -155,47 +163,7 @@ export async function interpretImage(
     },
   });
 
-  const started = Date.now();
-  let res: Response | undefined;
-
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const attemptStart = Date.now();
-    res = await fetch(`${ENDPOINT}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-    });
-    if (res.ok) break;
-    const errBody = await res.text();
-    log("gemini_image_http_error", {
-      status: res.status,
-      body: errBody.slice(0, 400),
-      attempt,
-      attempt_latency_ms: Date.now() - attemptStart,
-    });
-    if (!RETRIABLE_STATUS.has(res.status) || attempt === MAX_ATTEMPTS) {
-      throw new Error(`Gemini image HTTP ${res.status}`);
-    }
-    await sleep(BACKOFF_MS[attempt - 1]);
-  }
-
-  const latency_ms = Date.now() - started;
-  if (!res || !res.ok) throw new Error("Gemini image HTTP failure after retries");
-
-  const raw = (await res.json()) as GeminiRawResponse;
-  const text = raw.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  if (!text) {
-    log("gemini_image_empty_response", { finishReason: raw.candidates?.[0]?.finishReason, latency_ms });
-    throw new Error("Gemini image returned no text");
-  }
-
-  let envelope: ImageGeminiEnvelope;
-  try {
-    envelope = JSON.parse(text) as ImageGeminiEnvelope;
-  } catch (err) {
-    log("gemini_image_parse_error", { text: text.slice(0, 200), error: (err as Error).message });
-    throw new Error("Gemini image returned invalid JSON");
-  }
+  const { parsed: envelope, latency_ms } = await callGemini<ImageGeminiEnvelope>(body, "gemini_image");
 
   log("gemini_image_interpreted", { intent: envelope.intent, has_motivo: !!envelope.motivo, latency_ms });
 

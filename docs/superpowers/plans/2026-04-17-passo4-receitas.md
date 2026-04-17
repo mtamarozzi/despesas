@@ -1884,4 +1884,10 @@ O `supabase-js` roda o callback de `onAuthStateChange` segurando um lock interno
 - **Bug 5** — bundle 588 KB sem code-split. Só latência.
 
 ### Deploy
-Pendente: `vercel --prod` após commit.
+Concluído (2026-04-17) — `npx vercel --prod` rodado pelo usuário após commit `ee70e24`. Login validado em produção: CasaFlow voltou ao normal.
+
+### Nota sobre incidente Supabase simultâneo
+Entre 13:02 e 23:08 UTC de 2026-04-17, o Supabase teve incidente de rede upstream com impacto em DNS e HTTP 530 em Brasil/América do Sul (status page público). Esse incidente **não é a causa** do travamento relatado — a evidência da aba Network (zero chamadas a `auth/v1/token`) só bate com deadlock no cliente, não com erro de rede. Os dois problemas coexistiram mas são independentes; o fix de deadlock é necessário mesmo com o Supabase 100% saudável.
+
+### Mistério da tabela `tasks` (esclarecido)
+Usuário confirmou: `tasks` pertence a outro projeto no mesmo Supabase, sem conexão com o CasaFlow. Deixada intacta. A tabela `reminders` (também zerada) fica mantida para uso na Fase 6 do roadmap.

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
-import { LayoutDashboard, Receipt, PlusCircle, BarChart3, Bell, Settings, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Receipt, PlusCircle, Bell, Settings, TrendingUp } from 'lucide-react';
 import './Layout.css';
 
 const mobileMenuItems = [

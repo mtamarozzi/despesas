@@ -230,7 +230,7 @@ function App() {
 
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard expenses={expenses} />;
+        return <Dashboard expenses={expenses} household={household} />;
       case 'incomes':
         return <Incomes user={session?.user} household={household} />;
       case 'expenses':
@@ -271,7 +271,7 @@ function App() {
       case 'settings':
         return <Settings user={session?.user} household={household} />;
       default:
-        return <Dashboard expenses={expenses} />;
+        return <Dashboard expenses={expenses} household={household} />;
     }
   };
 

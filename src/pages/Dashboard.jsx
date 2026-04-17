@@ -11,6 +11,7 @@ import {
   LineElement
 } from 'chart.js';
 import { Home, Utensils, Ticket, Car, ShoppingBag, Zap, Tag } from 'lucide-react';
+import { MonthlyBalanceCard } from '../components/MonthlyBalanceCard';
 import './Dashboard.css';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
@@ -24,7 +25,7 @@ const CATEGORY_ICONS = {
 
 const fmt = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-const Dashboard = ({ expenses = [] }) => {
+const Dashboard = ({ expenses = [], household }) => {
   const now = new Date();
   const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const currentMonthLabel = `${monthNames[now.getMonth()].toUpperCase()} ${now.getFullYear()}`;
@@ -58,6 +59,7 @@ const Dashboard = ({ expenses = [] }) => {
 
   return (
     <div className="dashboard-container">
+      <MonthlyBalanceCard household={household} />
       <div className="dashboard-top-grid">
         <section className="chart-card glass">
           <div className="chart-header">

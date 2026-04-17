@@ -1,6 +1,6 @@
 # Plano de Continuidade — CasaFlow + Assistente WhatsApp
 
-**Data:** 2026-04-15 (criado) · 2026-04-16 (última atualização: Passo 4 em brainstorming — pausado antes da 1ª pergunta de esclarecimento)
+**Data:** 2026-04-15 (criado) · 2026-04-17 (última atualização: Passo 4 implementado + deployado — aguardando E2E por problema de DNS local do Marcelo)
 **Autor:** Claude + Marcelo
 **Baseado em:** `RELATORIO_CASAFLOW_WHATSAPP.md` + screenshots em `Inspira/`
 **Escopo:** do estado atual (Fase 0 concluída) até assistente completo (texto + voz + imagem + consultas + lembretes)
@@ -12,7 +12,7 @@
 - ✅ Fase 4 (OCR cupom + Pix via Gemini multimodal)
 - 📝 Fase 5 (mensagens de voz) — **design + plano prontos, execução pausada** em 2026-04-16 após identificação do gap de Receitas. Retomável a qualquer momento. Spec: `docs/superpowers/specs/2026-04-16-phase5-audio-messages-design.md`. Plano: `docs/superpowers/plans/2026-04-16-phase5-audio-messages.md` (commit `3e12189`).
 - ✅ Fase 6 (lembretes automáticos T-3/T-1 via pg_cron 9h BRT)
-- 🏗️ **SPEC DEFINITIVA CasaFlow em execução** — spec unificada em `docs/SPEC_DEFINITIVA_CASAFLOW.md` (anexada fora do repo, em `C:\Users\User\Documents\Despesas\docs\`) substitui o escopo isolado de Receitas e absorve Fase 7 (metas). Entrega: categorias dinâmicas + receitas + metas + recorrências + dashboard reformulado + onboarding + adaptação WhatsApp. Ordem: Passo 1 migrations → Passo 2 WhatsApp → Passos 3–8 frontend. **Passo 1 concluído em 2026-04-16 — ver seção "SPEC DEFINITIVA — Passo 1" abaixo.**
+- 🏗️ **SPEC DEFINITIVA CasaFlow em execução** — spec unificada em `docs/SPEC_DEFINITIVA_CASAFLOW.md` (anexada fora do repo, em `C:\Users\User\Documents\Despesas\docs\`) substitui o escopo isolado de Receitas e absorve Fase 7 (metas). Entrega: categorias dinâmicas + receitas + metas + recorrências + dashboard reformulado + onboarding + adaptação WhatsApp. Ordem: Passo 1 migrations → Passo 2 WhatsApp → Passos 3–8 frontend. **Passos 1, 2, 3 concluídos em 2026-04-16. Passo 4 implementado + deployado em 2026-04-17, aguardando E2E. Ver seções "SPEC DEFINITIVA — Passo N" abaixo.**
 - ⏳ Fase 8 (subcategorias) — pendente (reavaliar após SPEC DEFINITIVA concluída; categorias dinâmicas podem ter tornado obsoleto).
 
 ---
@@ -178,51 +178,114 @@ daily_spending · 7 linhas Abr/2026, categoria canônica via coalesce(c.name, e.
 
 ---
 
-## SPEC DEFINITIVA — Passo 4 (Frontend: Receitas) 🏗️ EM BRAINSTORMING (pausado 2026-04-16)
+## SPEC DEFINITIVA — Passo 4 (Frontend: Receitas + card Saldo do mês) 🏁 IMPLEMENTADO + DEPLOYADO · AGUARDANDO E2E (2026-04-17)
 
-**Estado:** skill `superpowers:brainstorming` invocada, checklist criado como tasks (9 tasks #1-#9), contexto explorado, Visual Companion oferecido. **Pausado aguardando resposta do Marcelo sobre o Visual Companion + 1ª pergunta de esclarecimento.**
+**Estado atual:** código 100% implementado, buildado, lintado, **13 commits** no branch `main` (`mtamarozzi/despesas`) e pushed. Deploy feito na Vercel (ready) e alias `casa.hubautomacao.pro` atualizado. **E2E não validado** — interrompido na tela de login por falha de DNS da rede local do Marcelo (`net::ERR_NAME_NOT_RESOLVED` em `*.supabase.co`). Não é bug do Passo 4 — é infra local. Destravar trocando DNS pra `1.1.1.1` + `ipconfig /flushdns`.
 
-### O que foi feito nesta sessão
+### Artefatos de brainstorming e plano
 
-1. Tasks #1-#9 criadas cobrindo todo o checklist do brainstorming.
-2. **Task #1 (Explorar contexto) — concluída.** Coletado:
-   - `src/pages/` atuais: `NewEntry.jsx` (form despesa), `Dashboard.jsx`, `Reports.jsx`, `CalendarView.jsx`, `Settings.jsx`, `Login.jsx`. **Não existe uma página dedicada só a listar Despesas** — isso vira pergunta de design ("espelhar o quê?").
-   - SPEC §7.4 Receitas é curta: "espelho da tela de despesas com adaptações". Pouco detalhe — a maior parte da spec vai vir do brainstorming.
-   - Schema `public.incomes` (Passo 1, migration #2): `household_id, user_id, name, amount, category_id, received_date, status in ('recebido','previsto'), notes, added_by_name, recurrence_id, timestamps`.
-   - 6 categorias seed `type='income'`: Salário, Freelance, Aluguel Recebido, Investimentos, Benefício, Outros (receita).
-   - 3 receitas-teste já no banco (Salário Marcelo 5.000, Salário Rossana 3.000, Freelance 800 = total R$ 8.800).
-   - Hook-padrão do projeto (stale-while-revalidate + mutations com atualização local) está em `src/hooks/useCategories.js` — será o template pra `useIncomes.js`.
-3. **Task #2 (Visual Companion) — em andamento.** Mensagem isolada enviada ao Marcelo oferecendo ativar mockups via URL local.
+| Arquivo | Descrição |
+|---|---|
+| `docs/superpowers/specs/2026-04-17-passo4-receitas-design.md` | Spec aprovada (10 seções, 8 decisões). |
+| `docs/superpowers/plans/2026-04-17-passo4-receitas.md` | Plano de implementação com 12 tasks bite-sized + código completo por task. |
 
-### Divergência de numeração identificada (decidir ao retomar)
+### Decisões do brainstorming (7 perguntas via Visual Companion)
 
-- **PLANO_CONTINUIDADE.md** (este arquivo) chama o próximo passo de **"Passo 4 — tela de Receitas"**.
-- **SPEC_DEFINITIVA_CASAFLOW.md** (§ "Ordem de Implementação") lista: Passo 4 = **Metas**, Passo 5 = **Recorrências**, **Passo 6 = Receitas**.
-- Origem: o PLANO trata Receitas como próximo após o bug/deploy do Passo 3; a SPEC oficial manda Metas antes. Decisão não tomada.
-- **Ação ao retomar:** Marcelo responde qual ordem seguir:
-  - (a) manter a ordem do PLANO (Receitas agora) — argumento: Receitas é pré-requisito conceitual pra Metas ("meta de X = teto sobre receita Y"), e o banco já tem dados de teste de receita prontos.
-  - (b) seguir a ordem da SPEC (Metas agora, Receitas depois) — argumento: SPEC é fonte canônica; Metas opera sobre despesas que já existem em abundância (14 reais), receita é pouco usada no fluxo diário.
-  - (c) outra ordem.
-- Recomendação preliminar: **(a) Receitas primeiro**. Metas ganham utilidade real quando há receita conhecida; inverter adia o valor agregado da feature.
+1. **Ordem:** Receitas **antes** de Metas (diverge da ordem canônica da SPEC, que colocava Metas primeiro — justificativa: Metas só faz sentido sobre receita conhecida).
+2. **Estrutura:** página `/receitas` dedicada (espelho de Despesas) — não toggle em NewEntry.
+3. **Escopo V1:** Padrão (listar + filtros + totais + CRUD + transição previsto→recebido).
+4. **Transição previsto→recebido:** botão inline verde "✓ Recebido" + toast "Desfazer" 5s (update otimista).
+5. **Layout lista:** agrupada por mês com subtotal no header do grupo.
+6. **Dashboard:** ganha 1 card "Saldo do mês" lendo a view `monthly_summary`.
+7. **Atribuição de usuário:** dropdown "Em nome de" (default = logado); `added_by_name` = logado sempre (auditoria imutável).
+8. **Defaults finais:** status "Recebido" no form · delete com toast Undo · filtro status "Todos" na página.
 
-### Ponto exato de retomada
+### Arquivos novos em `src/`
 
-1. Marcelo responde à oferta do Visual Companion (sim/não).
-2. Marcelo decide divergência de numeração (a/b/c acima).
-3. Claude segue com a **1ª pergunta de esclarecimento** — sugestão: *"Espelhar o quê? O form de `NewEntry.jsx` ganha um toggle Despesa/Receita, ou criamos uma página `Incomes.jsx` separada com seu próprio form + lista?"*.
-4. Fluxo segue pelo checklist de brainstorming (tasks #3→#9) até gerar `docs/superpowers/specs/2026-04-16-phase4-incomes-page-design.md` + plano em `docs/superpowers/plans/`.
+| Arquivo | Função |
+|---|---|
+| `hooks/useIncomes.js` | Stale-while-revalidate sobre `public.incomes`; filtros + CRUD + `markReceived`. |
+| `hooks/useHouseholdMembers.js` | Lista membros ativos via `household_members` → `profiles`. |
+| `hooks/useMonthlySummary.js` | Lê view `monthly_summary`; helper `currentMonthYear()`. |
+| `pages/Incomes.jsx` + `Incomes.css` | Página principal com header de totais, filtros, lista agrupada, modal. |
+| `components/IncomeFormModal.jsx` + `.css` | Modal criar/editar com 7 campos e validação client-side. |
+| `components/MonthlyBalanceCard.jsx` + `.css` | Card "Saldo · {mês/ano}" pro Dashboard (gradient + cor dinâmica). |
+| `components/Toast.jsx` + `.css` | Toast reaproveitável com ação "Desfazer". |
 
-### Perguntas-chave previstas pro brainstorming (pra acelerar amanhã)
+### Arquivos alterados
 
-- Espelhar `NewEntry` (form único com toggle) vs página nova `Incomes` dedicada?
-- Tela nova entra no sidebar como item próprio ou dentro do Dashboard?
-- Filtros da lista: período (hoje/semana/mês/custom), categoria, status (recebido/previsto), usuário?
-- Totais exibidos: só "recebido + previsto" ou também saldo projetado (receitas − despesas do mesmo período)?
-- Ordenação default: `received_date desc` ou `created_at desc`?
-- Ações na lista: editar/excluir inline, modal, ou só leitura (criar/editar só no form)?
-- Status "previsto" → "recebido": como o usuário faz essa transição? (Botão "Marcar como recebido"?)
-- Integração com recorrências: se uma receita vem de recorrência, exibir badge? Permitir desvincular?
-- Responsividade: usar o mesmo breakpoint do resto (≤640px colapsa em 1 coluna)?
+| Arquivo | Mudança |
+|---|---|
+| `components/Sidebar.jsx` | Item `{ id: 'incomes', label: 'Receitas', icon: TrendingUp }` após Dashboard. |
+| `components/Layout.jsx` | Mesmo item no `mobileMenuItems`; `BarChart3` (ícone de Relatórios) removido do import órfão. |
+| `App.jsx` | `import Incomes` + `case 'incomes'` + fix sessão zumbi (`await supabase.auth.getUser()` após sessão, `signOut()` se user não existe) + prop `household` passada ao Dashboard. |
+| `pages/Dashboard.jsx` | Monta `<MonthlyBalanceCard household={household} />` como primeiro filho do container. |
+
+### Commits do Passo 4 (ordem cronológica, `main`)
+
+```
+dfd54c6 docs(passo-4): spec de design da tela de Receitas + card Saldo do mes
+17e282b docs(passo-4): plano de implementacao detalhado com 12 tasks bite-sized
+5b0d2bf feat(passo-4): hook useHouseholdMembers para dropdown Em nome de
+21711c8 feat(passo-4): hook useMonthlySummary para o card Saldo do mes
+88bc9b4 feat(passo-4): hook useIncomes com filtros e CRUD + markReceived
+e372d14 feat(passo-4): componente Toast reaproveitavel com acao Desfazer
+5aa24a8 feat(passo-4): modal IncomeFormModal com 7 campos e validacao cliente
+603737d feat(passo-4): card MonthlyBalanceCard lendo view monthly_summary
+18171e3 feat(passo-4): pagina Incomes com lista agrupada, filtros, totais e acoes
+5eb6aea feat(passo-4): rota /incomes ligada ao Sidebar, bottom nav e App
+8f1beab style(passo-4): remover BarChart3 orfao do import do Layout
+7d73f5d feat(passo-4): card Saldo do mes no topo do Dashboard
+f896155 fix(passo-4): detectar sessao zumbi via getUser() e forcar signOut
+```
+
+### Deploy
+
+- URL de produção: `https://despesas-7nvgt8ijn-mtamarozzis-projects.vercel.app` (Ready).
+- Alias live: `https://casa.hubautomacao.pro/`.
+- Build: `npm run build` ok · Lint dos 10 arquivos novos: zero problemas.
+- Warnings pré-existentes em `App.jsx` (`fetchHousehold` hoisting, `exhaustive-deps`, `handleHouseholdReady` unused) permanecem — **não introduzidos por este passo**, documentados desde o Passo 3.
+
+### Validação E2E — PAUSADA em 2026-04-17
+
+Checklist de 12 cenários descrito na Task 12.2 do plano. Execução interrompida na tela de login com erro `net::ERR_NAME_NOT_RESOLVED` em `jeyllykzwtixfzeybkkl.supabase.co`. `nslookup` contra `1.1.1.1` resolveu com sucesso (`104.18.38.10` / `172.64.149.246`) — confirmado que é DNS local.
+
+**Destravamento (PowerShell como admin):**
+```powershell
+Get-NetAdapter | Where-Object Status -eq Up
+Set-DnsClientServerAddress -InterfaceAlias "NOME_DO_ADAPTER" -ServerAddresses ("1.1.1.1","8.8.8.8")
+ipconfig /flushdns
+```
+Depois fechar Chrome, reabrir, Ctrl+Shift+R em `casa.hubautomacao.pro`.
+
+### Como retomar (próxima sessão do Claude)
+
+1. Abrir Claude Code na pasta `C:\Users\User\Documents\Despesas\ethereal-ledger\`. A memória em `C:\Users\User\.claude\projects\C--Users-User-Documents-Despesas\memory\MEMORY.md` é auto-carregada.
+2. Prompt sugerido:
+   > *"Retomar E2E do Passo 4 conforme `docs/PLANO_CONTINUIDADE.md` seção 'Validação E2E — PAUSADA'. DNS já resolvido, consigo logar em casa.hubautomacao.pro."*
+3. Claude vai:
+   - Confirmar via `git log` os 13 commits.
+   - Pedir pra você rodar os 12 cenários E2E do plano (Task 12.2).
+   - Se tudo passar: muda este bloco pra `✅ CONCLUÍDO` e faz commit + push final com o relatório consolidado.
+   - Se algo falhar: abre investigação, faz fix-commit direcionado e refaz o checklist.
+4. Arquivos-chave pro Claude consultar: a spec e o plano listados acima.
+
+### Checklist E2E (copiar/colar quando destravar o DNS)
+
+1. Abrir `casa.hubautomacao.pro`, logar. Clicar "Receitas" no sidebar → página carrega com 3 receitas de seed em ABR 2026 (total R$ 8.800).
+2. **+ Nova receita** → modal abre. Preencher "Aluguel recebido" R$ 500, hoje, categoria "Aluguel Recebido", Em nome de = você, Status "Recebido" → Salvar. Aparece na lista; totais somam.
+3. Ir em Dashboard → card "Saldo · Abril/2026" visível no topo com Recebido, Despesas, Saldo.
+4. Voltar em Receitas → criar receita **"Previsto"** (ex: "13º salário" 5.000 em 20/12/2026). Aparece com botão verde "✓ Recebido" inline.
+5. Clicar **"✓ Recebido"** → toast "Marcado como recebido · Desfazer". Aguardar 5s → vira recebida.
+6. Criar outro previsto → clicar "✓ Recebido" → clicar **Desfazer** em <5s → volta a previsto.
+7. Menu **⋮** numa recebida → **Editar** → muda valor → Salvar. Lista reflete.
+8. Menu **⋮** → **Excluir** → toast "Receita excluída · Desfazer" → Desfazer → reaparece.
+9. Filtros: categoria "Salário", status "Previsto", "em nome de" Rossana — totais recalculam imediatamente.
+10. DevTools mobile 375px: totais em 1 coluna, filtros scroll horizontal, modal confortável, bottom nav tem "Receitas".
+11. WhatsApp: mandar "recebi 250 de aluguel" → F5 em /receitas → aparece (valida fluxo cross-canal).
+12. Logout/login com a outra conta → sem erros de sessão; funcionalidades iguais.
+
+**Próximo passo depois de fechar:** Passo 5 = Metas (CRUD em `public.goals` + integração com view `goal_progress` + UI).
 
 ---
 

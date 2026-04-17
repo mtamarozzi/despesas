@@ -22,7 +22,15 @@ function App() {
 
   useEffect(() => {
     // Usa apenas onAuthStateChange — ele dispara INITIAL_SESSION no carregamento da página
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        const { data: userCheck, error: userErr } = await supabase.auth.getUser();
+        if (userErr || !userCheck?.user) {
+          console.warn('[auth] sessão apontando pra usuário inexistente — forçando signOut');
+          await supabase.auth.signOut();
+          return; // onAuthStateChange será disparado de novo com session=null
+        }
+      }
       setSession(session);
       if (session) {
         if (!hasFetchedHousehold.current) {

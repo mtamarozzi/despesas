@@ -1,6 +1,6 @@
 # Plano de Continuidade — CasaFlow + Assistente WhatsApp
 
-**Data:** 2026-04-15 (criado) · 2026-04-16 (última atualização: Passo 3 deployado em produção via Vercel, bugs A/A.1/B resolvidos)
+**Data:** 2026-04-15 (criado) · 2026-04-16 (última atualização: Passo 4 em brainstorming — pausado antes da 1ª pergunta de esclarecimento)
 **Autor:** Claude + Marcelo
 **Baseado em:** `RELATORIO_CASAFLOW_WHATSAPP.md` + screenshots em `Inspira/`
 **Escopo:** do estado atual (Fase 0 concluída) até assistente completo (texto + voz + imagem + consultas + lembretes)
@@ -175,6 +175,54 @@ daily_spending · 7 linhas Abr/2026, categoria canônica via coalesce(c.name, e.
 **C. Estado para retomar o Passo 4:** Passo 3 em produção e validado E2E. Pronto pra iniciar Passo 4 (tela de Receitas).
 
 **Próximo passo da spec (Passo 4):** frontend — tela de Receitas (espelho de Despesas para `public.incomes`).
+
+---
+
+## SPEC DEFINITIVA — Passo 4 (Frontend: Receitas) 🏗️ EM BRAINSTORMING (pausado 2026-04-16)
+
+**Estado:** skill `superpowers:brainstorming` invocada, checklist criado como tasks (9 tasks #1-#9), contexto explorado, Visual Companion oferecido. **Pausado aguardando resposta do Marcelo sobre o Visual Companion + 1ª pergunta de esclarecimento.**
+
+### O que foi feito nesta sessão
+
+1. Tasks #1-#9 criadas cobrindo todo o checklist do brainstorming.
+2. **Task #1 (Explorar contexto) — concluída.** Coletado:
+   - `src/pages/` atuais: `NewEntry.jsx` (form despesa), `Dashboard.jsx`, `Reports.jsx`, `CalendarView.jsx`, `Settings.jsx`, `Login.jsx`. **Não existe uma página dedicada só a listar Despesas** — isso vira pergunta de design ("espelhar o quê?").
+   - SPEC §7.4 Receitas é curta: "espelho da tela de despesas com adaptações". Pouco detalhe — a maior parte da spec vai vir do brainstorming.
+   - Schema `public.incomes` (Passo 1, migration #2): `household_id, user_id, name, amount, category_id, received_date, status in ('recebido','previsto'), notes, added_by_name, recurrence_id, timestamps`.
+   - 6 categorias seed `type='income'`: Salário, Freelance, Aluguel Recebido, Investimentos, Benefício, Outros (receita).
+   - 3 receitas-teste já no banco (Salário Marcelo 5.000, Salário Rossana 3.000, Freelance 800 = total R$ 8.800).
+   - Hook-padrão do projeto (stale-while-revalidate + mutations com atualização local) está em `src/hooks/useCategories.js` — será o template pra `useIncomes.js`.
+3. **Task #2 (Visual Companion) — em andamento.** Mensagem isolada enviada ao Marcelo oferecendo ativar mockups via URL local.
+
+### Divergência de numeração identificada (decidir ao retomar)
+
+- **PLANO_CONTINUIDADE.md** (este arquivo) chama o próximo passo de **"Passo 4 — tela de Receitas"**.
+- **SPEC_DEFINITIVA_CASAFLOW.md** (§ "Ordem de Implementação") lista: Passo 4 = **Metas**, Passo 5 = **Recorrências**, **Passo 6 = Receitas**.
+- Origem: o PLANO trata Receitas como próximo após o bug/deploy do Passo 3; a SPEC oficial manda Metas antes. Decisão não tomada.
+- **Ação ao retomar:** Marcelo responde qual ordem seguir:
+  - (a) manter a ordem do PLANO (Receitas agora) — argumento: Receitas é pré-requisito conceitual pra Metas ("meta de X = teto sobre receita Y"), e o banco já tem dados de teste de receita prontos.
+  - (b) seguir a ordem da SPEC (Metas agora, Receitas depois) — argumento: SPEC é fonte canônica; Metas opera sobre despesas que já existem em abundância (14 reais), receita é pouco usada no fluxo diário.
+  - (c) outra ordem.
+- Recomendação preliminar: **(a) Receitas primeiro**. Metas ganham utilidade real quando há receita conhecida; inverter adia o valor agregado da feature.
+
+### Ponto exato de retomada
+
+1. Marcelo responde à oferta do Visual Companion (sim/não).
+2. Marcelo decide divergência de numeração (a/b/c acima).
+3. Claude segue com a **1ª pergunta de esclarecimento** — sugestão: *"Espelhar o quê? O form de `NewEntry.jsx` ganha um toggle Despesa/Receita, ou criamos uma página `Incomes.jsx` separada com seu próprio form + lista?"*.
+4. Fluxo segue pelo checklist de brainstorming (tasks #3→#9) até gerar `docs/superpowers/specs/2026-04-16-phase4-incomes-page-design.md` + plano em `docs/superpowers/plans/`.
+
+### Perguntas-chave previstas pro brainstorming (pra acelerar amanhã)
+
+- Espelhar `NewEntry` (form único com toggle) vs página nova `Incomes` dedicada?
+- Tela nova entra no sidebar como item próprio ou dentro do Dashboard?
+- Filtros da lista: período (hoje/semana/mês/custom), categoria, status (recebido/previsto), usuário?
+- Totais exibidos: só "recebido + previsto" ou também saldo projetado (receitas − despesas do mesmo período)?
+- Ordenação default: `received_date desc` ou `created_at desc`?
+- Ações na lista: editar/excluir inline, modal, ou só leitura (criar/editar só no form)?
+- Status "previsto" → "recebido": como o usuário faz essa transição? (Botão "Marcar como recebido"?)
+- Integração com recorrências: se uma receita vem de recorrência, exibir badge? Permitir desvincular?
+- Responsividade: usar o mesmo breakpoint do resto (≤640px colapsa em 1 coluna)?
 
 ---
 

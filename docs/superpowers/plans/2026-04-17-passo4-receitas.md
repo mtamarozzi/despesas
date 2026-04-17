@@ -1851,3 +1851,37 @@ Esperado: working tree clean; histórico mostra a sequência de commits do Passo
 - `currentMonthYear()` exportado do mesmo arquivo (Task 2) e consumido em Task 6.
 
 **Escopo:** 1 plano, 1 entrega coesa. Não quebra em sub-planos.
+
+---
+
+## Hotfix pós-deploy (2026-04-17): login travado em "Processando..." + self-heal perigoso
+
+### Sintoma reportado pelo usuário
+Desde o deploy do passo-4, o login fica preso em "Processando..." indefinidamente. Aba Network do DevTools mostra os estáticos carregando 200 OK, mas **zero requests a `auth/v1/token`** — a chamada ao Supabase nunca sai.
+
+### Investigação sistemática
+1. Infra 100% saudável (DNS Vercel OK, ping 23ms, HTML/JS/CSS todos 200).
+2. Banco íntegro: `expenses=14`, `households=1`, `incomes=4`, `categories=16`, zero linhas órfãs com `household_id NULL`.
+3. Commit `f896155 fix(passo-4): detectar sessao zumbi via getUser() e forcar signOut` introduziu chamada `supabase.auth.getUser()` **dentro do callback** de `onAuthStateChange` — padrão explicitamente proibido pela doc oficial do Supabase.
+
+### Causa raiz (Bug 1 — crítico)
+O `supabase-js` roda o callback de `onAuthStateChange` segurando um lock interno (`navigator.locks`). Qualquer chamada a `supabase.auth.*` dentro desse callback tenta pegar o mesmo lock → **deadlock permanente**. Ao carregar a página com sessão persistida, o callback dispara `INITIAL_SESSION`, entra no `getUser()`, trava, e a partir daí **qualquer** operação de auth (inclusive `signInWithPassword` do login) fica presa.
+
+### Bug oculto achado no caminho (Bug 3 — data-loss silencioso)
+`App.jsx:fetchHousehold` tinha self-heal agressivo: se o `household_id` do JWT não encontrava linha em `households`, o código chamava `findOrCreateDefaultHousehold()` que pegava **qualquer** household chamado "CasaFlow" ou criava um novo, e sobrescrevia o `household_id` do usuário via `auth.updateUser`. Qualquer glitch de RLS ou inconsistência causaria migração silenciosa do usuário pra outra casa, perdendo acesso aos dados originais.
+
+### Correções aplicadas
+- **`src/App.jsx`** — callback de `onAuthStateChange` envolvido em `setTimeout(async () => { ... }, 0)` (padrão oficial recomendado pelo Supabase) para liberar o lock antes do trabalho async.
+- **`src/App.jsx`** — `findOrCreateDefaultHousehold()` removido; `fetchHousehold` agora loga erro claro e mostra tela com botão "Sair" quando `household_id` do JWT não resolve, ao invés de mascarar o problema criando casa nova.
+
+### Validação
+- `npm run build` OK (`dist/assets/index-CoOfrRwe.js`, 588.41 kB).
+- Estado do Supabase auditado via MCP: três tabelas com 0 linhas (`reminders`, `tasks`, `whatsapp_context`) — as duas primeiras aguardam confirmação do usuário sobre qual ele viu esvaziada; a terceira é limpeza esperada da Edge Function.
+
+### Bugs abertos (não corrigidos nesse hotfix)
+- **Bug 2** — `migration_v2_clean.sql` contém `DROP TABLE households CASCADE` + `UPDATE expenses SET household_id = NULL`. Se reexecutado, apaga/invalida dados históricos. Nunca rodar novamente sem análise.
+- **Bug 4** — schema de `incomes`, `categories`, `tasks`, `reminders`, `goals`, `recurrences`, `profiles` e `whatsapp_*` só existe no Supabase remoto; não está versionado em `supabase/migrations/`. Risco de perda se alguém fizer `db reset`.
+- **Bug 5** — bundle 588 KB sem code-split. Só latência.
+
+### Deploy
+Pendente: `vercel --prod` após commit.

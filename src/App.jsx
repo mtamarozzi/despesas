@@ -21,29 +21,32 @@ function App() {
   const hasFetchedHousehold = useRef(false);
 
   useEffect(() => {
-    // Usa apenas onAuthStateChange — ele dispara INITIAL_SESSION no carregamento da página
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        const { data: userCheck, error: userErr } = await supabase.auth.getUser();
-        if (userErr || !userCheck?.user) {
-          console.warn('[auth] sessão apontando pra usuário inexistente — forçando signOut');
-          await supabase.auth.signOut();
-          return; // onAuthStateChange será disparado de novo com session=null
+    // IMPORTANTE: nunca chamar supabase.auth.* DENTRO do callback de onAuthStateChange
+    // (causa deadlock no lock interno do GoTrueClient). Trabalho async vai em setTimeout(fn, 0).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setTimeout(async () => {
+        if (session) {
+          const { data: userCheck, error: userErr } = await supabase.auth.getUser();
+          if (userErr || !userCheck?.user) {
+            console.warn('[auth] sessão apontando pra usuário inexistente — forçando signOut');
+            await supabase.auth.signOut();
+            return; // onAuthStateChange será disparado de novo com session=null
+          }
         }
-      }
-      setSession(session);
-      if (session) {
-        if (!hasFetchedHousehold.current) {
-          hasFetchedHousehold.current = true;
-          fetchHousehold(session.user);
+        setSession(session);
+        if (session) {
+          if (!hasFetchedHousehold.current) {
+            hasFetchedHousehold.current = true;
+            fetchHousehold(session.user);
+          }
+        } else {
+          hasFetchedHousehold.current = false;
+          setExpenses([]);
+          setHousehold(null);
+          setHouseholdLoading(false);
+          setLoading(false);
         }
-      } else {
-        hasFetchedHousehold.current = false;
-        setExpenses([]);
-        setHousehold(null);
-        setHouseholdLoading(false);
-        setLoading(false);
-      }
+      }, 0);
     });
 
     return () => {
@@ -52,55 +55,28 @@ function App() {
     };
   }, []);
 
-  const findOrCreateDefaultHousehold = async () => {
-    const { data: existing } = await supabase
-      .from('households')
-      .select('id, name, invite_code')
-      .eq('name', 'CasaFlow')
-      .maybeSingle();
-    if (existing) return existing;
-
-    const { data: created, error } = await supabase
-      .from('households')
-      .insert([{
-        name: 'CasaFlow',
-        invite_code: 'CASAF' + Math.random().toString(36).substring(7).toUpperCase(),
-      }])
-      .select()
-      .single();
-    if (error) {
-      console.error('Erro ao criar família padrão:', error.message);
-      return null;
-    }
-    return created;
-  };
-
   const fetchHousehold = async (user) => {
     setHouseholdLoading(true);
 
-    let householdId = user.user_metadata?.household_id;
-    let houseData = null;
-
-    if (householdId) {
-      const { data } = await supabase
-        .from('households')
-        .select('id, name, invite_code')
-        .eq('id', householdId)
-        .maybeSingle();
-      houseData = data;
+    const householdId = user.user_metadata?.household_id;
+    if (!householdId) {
+      console.error('[household] usuário sem household_id no JWT metadata — contatar suporte');
+      setHousehold(null);
+      setHouseholdLoading(false);
+      return;
     }
 
-    // Self-heal: metadata ausente OU apontando para household inexistente (ex: após limpeza de banco).
-    if (!houseData) {
-      houseData = await findOrCreateDefaultHousehold();
-      if (!houseData) {
-        setHouseholdLoading(false);
-        return;
-      }
-      if (houseData.id !== householdId) {
-        await supabase.auth.updateUser({ data: { household_id: houseData.id } });
-        householdId = houseData.id;
-      }
+    const { data: houseData, error } = await supabase
+      .from('households')
+      .select('id, name, invite_code')
+      .eq('id', householdId)
+      .maybeSingle();
+
+    if (error || !houseData) {
+      console.error('[household] household_id do JWT não encontrado no banco:', householdId, error?.message);
+      setHousehold(null);
+      setHouseholdLoading(false);
+      return;
     }
 
     setHousehold(houseData);
@@ -230,7 +206,17 @@ function App() {
   }
 
   if (!household) {
-    return <div className="loading-state">Configurando CasaFlow...</div>;
+    return (
+      <div className="loading-state">
+        Não foi possível carregar sua casa.
+        <br />
+        Verifique com o suporte ou abra o console (F12) para ver o erro.
+        <br />
+        <button onClick={() => supabase.auth.signOut()} style={{ marginTop: 12 }}>
+          Sair
+        </button>
+      </div>
+    );
   }
 
   const renderContent = () => {

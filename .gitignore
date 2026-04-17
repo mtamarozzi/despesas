@@ -29,3 +29,6 @@ supabase/.temp/
 supabase/.branches/
 .vercel
 .env*.local
+
+# Visual Companion (superpowers brainstorming) — mockups locais
+.superpowers/

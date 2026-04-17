@@ -1,6 +1,6 @@
 # Plano de Continuidade — CasaFlow + Assistente WhatsApp
 
-**Data:** 2026-04-15 (criado) · 2026-04-16 (última atualização: SPEC DEFINITIVA Passo 1 concluído)
+**Data:** 2026-04-15 (criado) · 2026-04-16 (última atualização: Passo 3 deployado em produção via Vercel, bugs A/A.1/B resolvidos)
 **Autor:** Claude + Marcelo
 **Baseado em:** `RELATORIO_CASAFLOW_WHATSAPP.md` + screenshots em `Inspira/`
 **Escopo:** do estado atual (Fase 0 concluída) até assistente completo (texto + voz + imagem + consultas + lembretes)
@@ -132,9 +132,9 @@ daily_spending · 7 linhas Abr/2026, categoria canônica via coalesce(c.name, e.
 
 ---
 
-## SPEC DEFINITIVA — Passo 3 (Frontend: Configurações + CRUD Categorias) ✅ CONCLUÍDO (2026-04-16)
+## SPEC DEFINITIVA — Passo 3 (Frontend: Configurações + CRUD Categorias) ✅ CONCLUÍDO + DEPLOYADO (2026-04-16)
 
-**Entrega:** nova aba "Ajustes" no CasaFlow com tabs de Perfil e Categorias. Categorias totalmente CRUD (criar, editar, arquivar/reativar, excluir, cor, ícone, tipo, ordem).
+**Entrega:** nova aba "Ajustes" no CasaFlow com tabs de Perfil e Categorias. Categorias totalmente CRUD (criar, editar, arquivar/reativar, excluir, cor, ícone, tipo, ordem). **Live em `https://casa.hubautomacao.pro` — validação E2E OK (criar inédita, detectar duplicata, arquivar/reativar, excluir, perfil).**
 
 **Arquivos novos em `src/`:**
 
@@ -162,31 +162,17 @@ daily_spending · 7 linhas Abr/2026, categoria canônica via coalesce(c.name, e.
 
 **Validação:** `npm run build` ✓ · `npx eslint` ✓ (código novo limpo; App.jsx pré-existente mantém 3 erros/warnings antigos, fora do escopo desse passo).
 
-**Deploy do frontend:** ainda não feito — Marcelo decide quando subir.
+**Deploy do frontend:** ✅ feito via Vercel (`mtamarozzis-projects/despesas`) em 2026-04-16. Alias `casa.hubautomacao.pro` aponta pra última prod. Domínio verificado por TXT `_vercel` na Cloudflare (DNS gerenciado pela Cloudflare, NSs delegados pela Hostinger).
 
-### Pontos abertos ao retomar (pausa em 2026-04-16)
+### Pendências resolvidas (2026-04-16)
 
-**A. Bug de RLS na criação de categoria (BLOQUEADOR antes de deploy):**
-- Ao rodar `npm run dev` e tentar criar nova categoria, o Supabase retornou `new row violates row-level security policy for table "categories"`.
-- Diagnóstico: a policy `FOR ALL USING (household_id IN (SELECT household_id FROM household_members WHERE user_id = auth.uid()))` exige que o usuário logado seja **membro** do household. Estado atual do banco:
-  - `household_members` tem só `mtamarozzi@hotmail.com` (0e566ba7…) e `rossana.tec.enf@gmail.com` (489f149c…) no household Casa (`f5a5bd3f…`).
-  - `auth.users` tem 3 contas — as duas acima + `mmitelmao@gmail.com` (456bfcc8…). A `mmitelmao` tem `user_metadata.household_id = f5a5bd3f…` mas **não está em household_members** (spec §1.3 diz "conta secundária, não usar").
-- Hipótese principal: Marcelo estava logado com `mmitelmao` no `npm run dev`. Fix = logar com `mtamarozzi` ou `rossana`.
-- Hipótese secundária: o `fetchHousehold()` em `App.jsx` faz self-heal do `household_id` na `user_metadata` mas **não insere row correspondente em `household_members`**, então qualquer usuário novo/secundário fica em estado inconsistente (metadata aponta, mas membership ausente). Precisa decidir se (a) corrigimos o self-heal pra inserir em `household_members` junto, (b) relaxamos a RLS, ou (c) apenas garantir que o onboarding sempre cria o member row.
-- **Ação ao retomar:** Marcelo confirma qual conta estava logada. Se for `mmitelmao`, fix é logar com outra conta. Se for `mtamarozzi`, investigar self-heal.
+**A. Bug RLS — RESOLVIDO.** Causa: sessão zumbi do Supabase Auth no localStorage. A conta `mmitelmao@gmail.com` foi deletada no backend mas o token JWT continuava válido em `sb-jeyllykzwtixfzeybkkl-auth-token`, fazendo `auth.uid()` apontar pra usuário inexistente (que não está em `household_members`). Fix imediato: limpar localStorage + logar com `mtamarozzi` ou `rossana`. Fix de raiz (backlog): após `getSession()` no `App.jsx`, chamar `supabase.auth.getUser()` e forçar `signOut()` se retornar "user not found" — previne reincidência pra qualquer conta futura.
 
-**B. Deploy do frontend — hospedagem a confirmar:**
-- Site em produção: `https://casa.hubautomacao.pro/`. Domínio próprio apontando pra algum hosting — provavelmente Easypanel (mesmo `u9givm.easypanel.host` da Evolution).
-- Sem `vercel.json`, `netlify.toml`, `.github/workflows` ou `Dockerfile` no repo — deploy atual é manual e o procedimento não está documentado.
-- **Ação ao retomar:** Marcelo responde:
-  1. É Easypanel mesmo? Tipo de app (static site vs container)?
-  2. URL do painel.
-  3. Como foi o último deploy do site (git pull + build remoto, upload de `dist/`, etc.)?
-- Só depois dessas respostas monto o comando de deploy correto.
+**A.1. UX de duplicidade — MELHORADO.** `useCategories.create/update` agora captura código Postgres `23505` (unique_violation) e substitui o erro cru `duplicate key value violates unique constraint "categories_household_id_name_key"` por `Já existe uma categoria chamada "X" neste household.`. Helper `translateCategoryError()` no próprio hook.
 
-**C. Estado para retomar o Passo 4:**
-- Passo 3 (Ajustes) commitado (`8da4e2d`), buildável (`npm run build` ✓), lint limpo. Bug A e deploy B são as únicas pendências antes de Passo 4.
-- Ordem recomendada: resolver A → resolver B e deployar Passo 3 → iniciar Passo 4 (tela de Receitas).
+**B. Hospedagem — IDENTIFICADA e DEPLOYADA.** O site NÃO está no Easypanel (painel da VPS tem só n8n/Chatwoot/Evolution/webhook). A pista certa era o TXT `_vercel` na Cloudflare + CNAME `casa → 285eacb9…` com proxy off. Deploy passou a ser `npx vercel --prod` direto do Windows. Projeto linkado via `npx vercel link` → `mtamarozzis-projects/despesas`. Env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) já estavam em Production. Deploy de 2026-04-16 produziu `despesas-qsxbotiov-mtamarozzis-projects.vercel.app` aliased pra `casa.hubautomacao.pro`.
+
+**C. Estado para retomar o Passo 4:** Passo 3 em produção e validado E2E. Pronto pra iniciar Passo 4 (tela de Receitas).
 
 **Próximo passo da spec (Passo 4):** frontend — tela de Receitas (espelho de Despesas para `public.incomes`).
 

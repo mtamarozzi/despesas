@@ -50,7 +50,7 @@ export function useCategories(householdId) {
       .insert(payload)
       .select()
       .single();
-    if (err) throw err;
+    if (err) throw translateCategoryError(err, payload.name);
     setCategories((prev) => [...(prev ?? []), data].sort(sortCats));
     return data;
   }, [householdId]);
@@ -74,7 +74,7 @@ export function useCategories(householdId) {
       .eq('id', id)
       .select()
       .single();
-    if (err) throw err;
+    if (err) throw translateCategoryError(err, payload.name);
     setCategories((prev) => (prev ?? []).map((c) => (c.id === id ? data : c)).sort(sortCats));
     return data;
   }, []);
@@ -111,4 +111,17 @@ export function useCategories(householdId) {
 function sortCats(a, b) {
   if (a.display_order !== b.display_order) return a.display_order - b.display_order;
   return a.name.localeCompare(b.name, 'pt-BR');
+}
+
+function translateCategoryError(err, name) {
+  if (err?.code === '23505') {
+    const nice = new Error(
+      name
+        ? `Já existe uma categoria chamada "${name}" neste household.`
+        : 'Já existe uma categoria com esse nome.',
+    );
+    nice.code = err.code;
+    return nice;
+  }
+  return err;
 }

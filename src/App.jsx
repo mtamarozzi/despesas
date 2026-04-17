@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import CalendarView from './pages/CalendarView';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Incomes from './pages/Incomes';
 import './App.css';
 
 function App() {
@@ -230,6 +231,8 @@ function App() {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard expenses={expenses} />;
+      case 'incomes':
+        return <Incomes user={session?.user} household={household} />;
       case 'expenses':
         return (
           <div className="expenses-view animate-in">

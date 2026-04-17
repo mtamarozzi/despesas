@@ -1,13 +1,14 @@
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Receipt, 
-  PlusCircle, 
-  BarChart3, 
-  Bell, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Receipt,
+  PlusCircle,
+  BarChart3,
+  Bell,
+  Settings,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  TrendingUp
 } from 'lucide-react';
 import logoImg from '../assets/logo.png';
 import './Sidebar.css';
@@ -17,6 +18,7 @@ const Sidebar = ({ activeTab, setActiveTab, onExport, user, isOpen }) => {
   const userInitials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'incomes', label: 'Receitas', icon: TrendingUp },
     { id: 'expenses', label: 'Despesas', icon: Receipt },
     { id: 'calendar', label: 'Calendário', icon: Bell },
     { id: 'new-entry', label: 'Nova Despesa', icon: PlusCircle },

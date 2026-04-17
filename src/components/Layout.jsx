@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
-import { LayoutDashboard, Receipt, PlusCircle, BarChart3, Bell, Settings } from 'lucide-react';
+import { LayoutDashboard, Receipt, PlusCircle, BarChart3, Bell, Settings, TrendingUp } from 'lucide-react';
 import './Layout.css';
 
 const mobileMenuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'incomes', label: 'Receitas', icon: TrendingUp },
   { id: 'expenses', label: 'Despesas', icon: Receipt },
   { id: 'new-entry', label: 'Novo', icon: PlusCircle },
   { id: 'calendar', label: 'Calendário', icon: Bell },
-  { id: 'reports', label: 'Relatórios', icon: BarChart3 },
   { id: 'settings', label: 'Ajustes', icon: Settings },
 ];
 

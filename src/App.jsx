@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './utils/supabaseClient';
 import Layout from './components/Layout';
+import Orbs from './components/Orbs';
 import Dashboard from './pages/Dashboard';
 import NewEntry from './pages/NewEntry';
 import Login from './pages/Login';
@@ -236,7 +237,7 @@ function App() {
                 <button className="filter-tab active">Todas</button>
               </div>
             </header>
-            <div className="expenses-list glass">
+            <div className="expenses-list glass-panel">
               {expenses.length === 0 ? <p className="empty-msg">Nenhuma despesa cadastrada.</p> : 
                expenses.map(exp => (
                 <div key={exp.id} className="expense-row">
@@ -270,9 +271,14 @@ function App() {
   };
 
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab} onExport={handleExportCSV} user={session?.user}>
-      {renderContent()}
-    </Layout>
+    <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden' }}>
+      <Orbs />
+      <div style={{ position: 'relative', zIndex: 10 }}>
+        <Layout activeTab={activeTab} setActiveTab={setActiveTab} onExport={handleExportCSV} user={session?.user}>
+          {renderContent()}
+        </Layout>
+      </div>
+    </div>
   );
 }
 

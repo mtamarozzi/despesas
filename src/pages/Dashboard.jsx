@@ -61,7 +61,7 @@ const Dashboard = ({ expenses = [], household }) => {
     <div className="dashboard-container">
       <MonthlyBalanceCard household={household} />
       <div className="dashboard-top-grid">
-        <section className="chart-card glass">
+        <section className="chart-card glass-card">
           <div className="chart-header">
             <h3>Distribuição de Gastos</h3>
             <span>{currentMonthLabel}</span>
@@ -93,7 +93,7 @@ const Dashboard = ({ expenses = [], household }) => {
           )}
         </section>
 
-        <section className="summary-card glass">
+        <section className="summary-card glass-card">
           <h3>Gastos Totais</h3>
           <p>Total acumulado de todas as suas despesas.</p>
           <div className="economy-value">
@@ -121,7 +121,7 @@ const Dashboard = ({ expenses = [], household }) => {
             {categoryEntries.map(([name, value], i) => {
               const Icon = CATEGORY_ICONS[name] || Tag;
               return (
-                <div className="category-card glass" key={name}>
+                <div className="category-card glass-card" key={name}>
                   <div className="cat-top">
                     <div className="icon-box"><Icon size={18} /></div>
                     <span className="status-pill in">NO ORÇAMENTO</span>
@@ -140,7 +140,7 @@ const Dashboard = ({ expenses = [], household }) => {
         )}
       </section>
 
-      <section className="recent-activity glass">
+      <section className="recent-activity glass-panel">
         <div className="activity-header">
           <h3>Despesas Recentes</h3>
           <p>Suas últimas despesas cadastradas</p>

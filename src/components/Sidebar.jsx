@@ -27,7 +27,7 @@ const Sidebar = ({ activeTab, setActiveTab, onExport, user, isOpen }) => {
   ];
 
   return (
-    <aside className={`sidebar glass${isOpen ? ' open' : ''}`}>
+    <aside className={`sidebar glass-panel${isOpen ? ' open' : ''}`}>
       <div className="sidebar-header">
         <div className="logo-container">
           <img src={logoImg} alt="CasaFlow Logo" className="logo-img" />

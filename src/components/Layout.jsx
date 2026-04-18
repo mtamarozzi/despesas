@@ -27,7 +27,7 @@ const Layout = ({ children, activeTab, setActiveTab, onExport, user }) => {
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
       <Sidebar activeTab={activeTab} setActiveTab={handleNavClick} onExport={onExport} user={user} isOpen={sidebarOpen} />
       <main className="main-content">
-        <header className="top-bar glass">
+        <header className="top-bar glass-header">
           <button className="hamburger-btn" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Menu">
             <span />
             <span />
@@ -37,7 +37,7 @@ const Layout = ({ children, activeTab, setActiveTab, onExport, user }) => {
             <input type="text" placeholder="Buscar despesas..." />
           </div>
           <div className="top-actions">
-            <div className="profile-pill glass">
+            <div className="profile-pill glass-panel">
               <span className="profile-name">{userName}</span>
               <div className="topbar-avatar">{userInitials}</div>
             </div>
@@ -47,7 +47,7 @@ const Layout = ({ children, activeTab, setActiveTab, onExport, user }) => {
           {children}
         </div>
       </main>
-      <nav className="mobile-bottom-nav glass">
+      <nav className="mobile-bottom-nav glass-header">
         {mobileMenuItems.map((item) => (
           <button
             key={item.id}

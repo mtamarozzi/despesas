@@ -71,7 +71,7 @@ const CalendarView = ({ expenses = [], onToggleStatus }) => {
         <button className="add-event-btn glow"><Plus size={18} /> Nova Despesa</button>
       </header>
 
-      <div className="calendar-grid glass">
+      <div className="calendar-grid glass-panel">
         <div className="weekday-header">
           {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => <span key={d}>{d}</span>)}
         </div>
@@ -101,7 +101,7 @@ const CalendarView = ({ expenses = [], onToggleStatus }) => {
         </div>
       </div>
 
-      <section className="upcoming-events glass">
+      <section className="upcoming-events glass-panel">
         <h3>Próximos Vencimentos</h3>
         <div className="events-list">
           {monthExpenses.filter(e => new Date(e.date + 'T00:00:00') >= new Date()).slice(0, 5).map(e => (

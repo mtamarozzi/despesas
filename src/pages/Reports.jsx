@@ -35,28 +35,28 @@ const Reports = ({ expenses = [], onExport }) => {
       </header>
 
       <div className="report-summary-cards">
-        <div className="rcard glass">
+        <div className="rcard glass-card">
           <BarChart3 size={22} color="#9D59FF" />
           <div>
             <span>Total Geral</span>
             <h3>{fmt(totalGeral)}</h3>
           </div>
         </div>
-        <div className="rcard glass">
+        <div className="rcard glass-card">
           <CheckCircle size={22} color="#59FFB5" />
           <div>
             <span>Total Pago</span>
             <h3>{fmt(totalPago)}</h3>
           </div>
         </div>
-        <div className="rcard glass">
+        <div className="rcard glass-card">
           <Clock size={22} color="#FF9459" />
           <div>
             <span>Total Pendente</span>
             <h3>{fmt(totalPendente)}</h3>
           </div>
         </div>
-        <div className="rcard glass">
+        <div className="rcard glass-card">
           <TrendingDown size={22} color="#FF598B" />
           <div>
             <span>Nº de Despesas</span>
@@ -66,7 +66,7 @@ const Reports = ({ expenses = [], onExport }) => {
       </div>
 
       {categoryEntries.length > 0 && (
-        <section className="report-section glass">
+        <section className="report-section glass-panel">
           <h3>Por Categoria</h3>
           <table className="report-table">
             <thead>
@@ -91,7 +91,7 @@ const Reports = ({ expenses = [], onExport }) => {
         </section>
       )}
 
-      <section className="report-section glass">
+      <section className="report-section glass-panel">
         <div className="report-section-header">
           <h3>Todas as Despesas</h3>
           <div className="filter-tabs">

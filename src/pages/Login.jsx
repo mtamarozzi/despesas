@@ -40,7 +40,7 @@ const Login = ({ onLoginSuccess }) => {
         <div className="blur-circle secondary"></div>
       </div>
       
-      <div className="login-card glass">
+      <div className="login-card glass-modal">
         <header className="login-header">
           <div className="login-logo">
             <img src={logoImg} alt="CasaFlow Logo" className="logo-img-large" />

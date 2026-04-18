@@ -105,7 +105,7 @@ function ProfileSection({ user }) {
   }
 
   return (
-    <div className="settings-card glass">
+    <div className="settings-card glass-card">
       <h2>Dados pessoais</h2>
       <form onSubmit={onSubmit} className="settings-form">
         <div className="input-group">
@@ -230,7 +230,7 @@ function CategoriesSection({ household }) {
   };
 
   return (
-    <div className="settings-card glass">
+    <div className="settings-card glass-card">
       <div className="categories-toolbar">
         <div className="category-filters">
           {[
@@ -309,7 +309,7 @@ function CategoriesSection({ household }) {
 
       {draft && (
         <div className="modal-backdrop" onClick={closeDraft}>
-          <div className="modal glass" onClick={(e) => e.stopPropagation()}>
+          <div className="modal glass-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{draft.id ? 'Editar categoria' : 'Nova categoria'}</h3>
               <button className="icon-btn" onClick={closeDraft} title="Fechar">

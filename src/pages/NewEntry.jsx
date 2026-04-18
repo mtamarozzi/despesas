@@ -23,7 +23,7 @@ const NewEntry = ({ onSave, onCancel }) => {
         <p>Adicione os detalhes da sua transação residencial</p>
       </header>
 
-      <div className="form-card glass">
+      <div className="form-card glass-card">
         <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }}>
           <div className="form-grid">
             <div className="input-group">
@@ -88,7 +88,7 @@ const NewEntry = ({ onSave, onCancel }) => {
             </div>
           </div>
 
-          <div className="toggle-group glass">
+          <div className="toggle-group glass-input">
             <div className="toggle-info">
               <div className="icon-box"><Calendar size={18} /></div>
               <div className="text">

@@ -18,7 +18,6 @@ import {
   msgNonText,
   msgRateLimited,
   msgSystemError,
-  msgUnauthorized,
   msgUnknown,
 } from "./messages.ts";
 import { logAudit } from "./audit.ts";
@@ -45,6 +44,11 @@ Deno.serve(async (req: Request) => {
 
   const { data } = event ?? {};
   if (!data?.key) return new Response("ok", { status: 200 });
+
+  if (data.key.remoteJid?.endsWith("@g.us")) {
+    log("ignored_group_message", { remoteJid: data.key.remoteJid, id: data.key.id });
+    return new Response("ok", { status: 200 });
+  }
 
   if (data.key.fromMe === true) {
     log("ignored_self_message", { id: data.key.id });
@@ -87,12 +91,30 @@ Deno.serve(async (req: Request) => {
 
   if (!user) {
     log("unauthorized_number", { phone });
-    await sendText(phone, msgUnauthorized());
     await logAudit({
       message_id: messageId,
       phone_number: phone,
       direction: "inbound",
       action: "unauthorized",
+      success: true,
+      latency_ms: Date.now() - started,
+      raw_text: rawText,
+    });
+    return new Response("ok", { status: 200 });
+  }
+
+  const { data: household } = await supabase
+    .from("households")
+    .select("whatsapp_bot_active")
+    .eq("id", user.household_id)
+    .maybeSingle();
+  if (household?.whatsapp_bot_active === false) {
+    log("bot_paused_for_household", { household_id: user.household_id, phone });
+    await logAudit({
+      message_id: messageId,
+      phone_number: phone,
+      direction: "inbound",
+      action: "bot_paused",
       success: true,
       latency_ms: Date.now() - started,
       raw_text: rawText,

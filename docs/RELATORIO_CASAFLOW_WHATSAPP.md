@@ -58,11 +58,12 @@ added_by_name text NULL
 
 #### `households` (1 linha)
 ```
-id          uuid PK DEFAULT gen_random_uuid()
-name        text       -- "Casa"
-invite_code text UNIQUE -- "ADFE48F2"
-created_by  uuid FK -> auth.users
-created_at  timestamptz
+id                   uuid PK DEFAULT gen_random_uuid()
+name                 text       -- "Casa"
+invite_code          text UNIQUE -- "ADFE48F2"
+created_by           uuid FK -> auth.users
+created_at           timestamptz
+whatsapp_bot_active  boolean NOT NULL DEFAULT true  -- kill-switch por household (§9)
 ```
 **Household ativo:** `f5a5bd3f-9fbf-4d78-9b18-8d51b998b35e` (nome: "Casa")
 
@@ -328,3 +329,49 @@ User mmitelmao:          456bfcc8-f29b-4e0b-b82a-c99314924891 (mmitelmao@gmail.c
 
 WhatsApp do Marcelo:     5514998885355 (já cadastrado em whatsapp_users)
 ```
+
+---
+
+## 9. Hardening do Webhook (2026-04-25)
+
+Reforço de filtros para fechar três vetores de exposição identificados na revisão do `whatsapp-webhook/index.ts`. Aplicado em 25/04/2026, após o ciclo de hotfix do glassmorphism.
+
+### 9.1 Camadas adicionadas (em ordem de execução)
+
+| # | Filtro | Comportamento | Linhas (`index.ts`) |
+|---|---|---|---|
+| 1 | `data.key.remoteJid.endsWith("@g.us")` | Loga `ignored_group_message`, retorna 200 sem tocar no banco | 48-51 |
+| 2 | `data.key.fromMe === true` | Loga `ignored_self_message`, retorna 200 (já existia) | 53-56 |
+| 3 | número não está em `whatsapp_users` | Loga `unauthorized_number` + audit, retorna 200 **silenciosamente** (não responde mais via Evolution) | 92-104 |
+| 4 | `households.whatsapp_bot_active === false` | Loga `bot_paused_for_household` + audit, retorna 200 sem chamar Gemini | 106-123 |
+
+### 9.2 Migration aplicada
+
+```sql
+-- nome: add_whatsapp_bot_active_to_households
+ALTER TABLE public.households
+  ADD COLUMN IF NOT EXISTS whatsapp_bot_active boolean NOT NULL DEFAULT true;
+```
+
+Default `true` mantém todos os households ativos. Para pausar:
+
+```sql
+UPDATE households SET whatsapp_bot_active = false WHERE id = '<household_id>';
+```
+
+### 9.3 Motivação
+
+- **Grupos**: se o número da instância `casaflow` for adicionado a um grupo, cada mensagem do grupo entraria no fluxo. O JID `...@g.us` não bate em `whatsapp_users` → caía no ramo "unauthorized" e disparava `msgUnauthorized()` para o JID do grupo a cada mensagem (amplificador de spam + custo Evolution).
+- **Desconhecidos silenciados**: a resposta automática a qualquer número confirmava a existência do bot e podia ser explorada por enumeração. Agora o número fica registrado em `whatsapp_audit_log` (action=`unauthorized`) sem aviso ao remetente.
+- **Kill-switch por household**: permite pausar a integração WhatsApp para uma família inteira sem desativar `whatsapp_users` um a um, útil em testes, manutenção ou suspensão temporária. A UI de toggle fica para a tela de Configurações (§6 — futuro).
+
+### 9.4 Deploy
+
+- Edge Function `whatsapp-webhook` redeployada via `supabase functions deploy whatsapp-webhook --project-ref jeyllykzwtixfzeybkkl` (sem Docker — bundle remoto).
+- Import `msgUnauthorized` removido de `index.ts`. Função em `messages.ts` mantida (pode ser usada em outro contexto futuro).
+
+### 9.5 Atualização do §6.2 — fluxo do passo 4
+
+O passo 4 do fluxo descrito em §6.2 deve ser lido como:
+
+> **4. Resolver usuário** — `SELECT * FROM whatsapp_users WHERE phone_number = ? AND active = true`. Se não existir, **logar `unauthorized_number` e retornar 200 sem responder** no WhatsApp. Se existir, verificar `households.whatsapp_bot_active`; se `false`, retornar 200 sem processar.
